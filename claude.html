@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -20,8 +19,8 @@
   --maple: #C0392B;
 }
 
-- { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body { height:100%; overflow:hidden; background:var(–dark); color:var(–text); font-family:‘DM Sans’,sans-serif; }
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { height:100%; overflow:hidden; background:var(--dark); color:var(--text); font-family:'DM Sans',sans-serif; }
 
 /* ── LAYOUT ─────────────────── */
 #app { display:flex; height:100vh; flex-direction:row; }
@@ -33,119 +32,119 @@
 .leaflet-control-zoom-in,
 .leaflet-control-zoom-out,
 .leaflet-control-attribution {
-filter:invert(100%) hue-rotate(180deg) brightness(83%) contrast(85%) saturate(55%);
+  filter:invert(100%) hue-rotate(180deg) brightness(83%) contrast(85%) saturate(55%);
 }
 
 /* ── DESKTOP SIDEBAR ─────────── */
 #sidebar {
-width:340px; min-width:340px;
-background:var(–panel);
-display:flex; flex-direction:column;
-border-right:1px solid var(–border);
-overflow:hidden; z-index:900;
-order:-1;
+  width:340px; min-width:340px;
+  background:var(--panel);
+  display:flex; flex-direction:column;
+  border-right:1px solid var(--border);
+  overflow:hidden; z-index:900;
+  order:-1;
 }
 
 /* ── MOBILE BOTTOM SHEET ─────── */
 @media (max-width:768px) {
-#app { flex-direction:column; position:relative; }
+  #app { flex-direction:column; position:relative; }
 
-#map-wrap {
-position:fixed; top:0; left:0; right:0;
-bottom:52px; height:auto;
-}
+  #map-wrap {
+    position:fixed; top:0; left:0; right:0;
+    bottom:52px; height:auto;
+  }
 
-#sidebar {
-position:fixed; bottom:0; left:0; right:0;
-width:100%; min-width:unset;
-height:58vh;
-border-right:none;
-border-top:1px solid var(–border);
-border-radius:16px 16px 0 0;
-z-index:900;
-transform:translateY(calc(58vh - 52px));
-transition:transform 0.35s cubic-bezier(0.32,0,0.2,1);
-order:0;
-}
+  #sidebar {
+    position:fixed; bottom:0; left:0; right:0;
+    width:100%; min-width:unset;
+    height:58vh;
+    border-right:none;
+    border-top:1px solid var(--border);
+    border-radius:16px 16px 0 0;
+    z-index:900;
+    transform:translateY(calc(58vh - 52px));
+    transition:transform 0.35s cubic-bezier(0.32,0,0.2,1);
+    order:0;
+  }
 
-#sidebar.open { transform:translateY(0); }
+  #sidebar.open { transform:translateY(0); }
 
-#drag-handle {
-display:flex; align-items:center; justify-content:center;
-height:22px; padding-top:10px; cursor:pointer; flex-shrink:0;
-}
-#drag-handle::before {
-content:’’; width:36px; height:4px;
-background:var(–border); border-radius:2px;
-}
+  #drag-handle {
+    display:flex; align-items:center; justify-content:center;
+    height:22px; padding-top:10px; cursor:pointer; flex-shrink:0;
+  }
+  #drag-handle::before {
+    content:''; width:36px; height:4px;
+    background:var(--border); border-radius:2px;
+  }
 
-#mobile-tab {
-display:flex; align-items:center; justify-content:space-between;
-padding:4px 16px 8px; cursor:pointer; flex-shrink:0;
-}
-.tab-city-name {
-font-family:‘Playfair Display’,serif;
-font-size:14px; font-style:italic; color:var(–gold);
-}
-.tab-toggle {
-font-size:10px; color:var(–muted);
-background:var(–panel2); border:1px solid var(–border);
-padding:3px 10px; border-radius:12px;
-}
+  #mobile-tab {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:4px 16px 8px; cursor:pointer; flex-shrink:0;
+  }
+  .tab-city-name {
+    font-family:'Playfair Display',serif;
+    font-size:14px; font-style:italic; color:var(--gold);
+  }
+  .tab-toggle {
+    font-size:10px; color:var(--muted);
+    background:var(--panel2); border:1px solid var(--border);
+    padding:3px 10px; border-radius:12px;
+  }
 
-#legend { bottom:calc(58vh - 36px) !important; }
+  #legend { bottom:calc(58vh - 36px) !important; }
 }
 
 @media (min-width:769px) {
-#drag-handle, #mobile-tab { display:none; }
+  #drag-handle, #mobile-tab { display:none; }
 }
 
 /* ── SIDEBAR INNER ───────────── */
 #sidebar-header {
-padding:18px 18px 14px;
-border-bottom:1px solid var(–border);
-background:var(–panel2); flex-shrink:0;
+  padding:18px 18px 14px;
+  border-bottom:1px solid var(--border);
+  background:var(--panel2); flex-shrink:0;
 }
 
 @media (max-width:768px) {
-#sidebar-header { padding:8px 16px 10px; }
-#sidebar-header h1 { font-size:15px; }
-.trip-meta { display:none; }
+  #sidebar-header { padding:8px 16px 10px; }
+  #sidebar-header h1 { font-size:15px; }
+  .trip-meta { display:none; }
 }
 
 .flag-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
-.route-tag { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(–gold); font-weight:500; }
+.route-tag { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--gold); font-weight:500; }
 
 #sidebar-header h1 {
-font-family:‘Playfair Display’,serif;
-font-size:19px; line-height:1.2;
+  font-family:'Playfair Display',serif;
+  font-size:19px; line-height:1.2;
 }
-#sidebar-header h1 em { color:var(–gold); font-style:italic; }
-.trip-meta { font-size:11px; color:var(–muted); margin-top:4px; }
+#sidebar-header h1 em { color:var(--gold); font-style:italic; }
+.trip-meta { font-size:11px; color:var(--muted); margin-top:4px; }
 
 /* FILTER TABS */
 #filter-tabs {
-display:flex; gap:4px; padding:8px 10px;
-background:var(–dark); border-bottom:1px solid var(–border);
-flex-wrap:wrap; flex-shrink:0;
+  display:flex; gap:4px; padding:8px 10px;
+  background:var(--dark); border-bottom:1px solid var(--border);
+  flex-wrap:wrap; flex-shrink:0;
 }
 
 .filter-btn {
-padding:4px 9px; border-radius:20px;
-border:1px solid var(–border); background:transparent;
-color:var(–muted); font-size:10px;
-font-family:‘DM Sans’,sans-serif; cursor:pointer;
-transition:all 0.18s; white-space:nowrap;
+  padding:4px 9px; border-radius:20px;
+  border:1px solid var(--border); background:transparent;
+  color:var(--muted); font-size:10px;
+  font-family:'DM Sans',sans-serif; cursor:pointer;
+  transition:all 0.18s; white-space:nowrap;
 }
 .filter-btn:hover,.filter-btn.active {
-background:var(–gold); color:var(–dark);
-border-color:var(–gold); font-weight:500;
+  background:var(--gold); color:var(--dark);
+  border-color:var(--gold); font-weight:500;
 }
 
 /* TIMELINE */
 #timeline {
-overflow-y:auto; flex:1; padding:4px 0;
-scrollbar-width:thin; scrollbar-color:var(–border) transparent;
+  overflow-y:auto; flex:1; padding:4px 0;
+  scrollbar-width:thin; scrollbar-color:var(--border) transparent;
 }
 
 .city-block { cursor:pointer; transition:background 0.15s; }
@@ -155,82 +154,81 @@ scrollbar-width:thin; scrollbar-color:var(–border) transparent;
 .city-header { display:flex; align-items:flex-start; gap:10px; padding:10px 14px 8px; }
 
 .day-badge {
-min-width:32px; height:32px; border-radius:7px;
-display:flex; align-items:center; justify-content:center;
-font-size:11px; font-weight:500; color:var(–dark);
-flex-direction:column; line-height:1; flex-shrink:0;
+  min-width:32px; height:32px; border-radius:7px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:500; color:var(--dark);
+  flex-direction:column; line-height:1; flex-shrink:0;
 }
 .day-badge span { font-size:7px; font-weight:400; margin-top:1px; }
 
 .city-info { flex:1; }
-.city-name { font-family:‘Playfair Display’,serif; font-size:15px; }
-.city-date { font-size:10px; color:var(–muted); margin-top:2px; }
+.city-name { font-family:'Playfair Display',serif; font-size:15px; }
+.city-date { font-size:10px; color:var(--muted); margin-top:2px; }
 
 .spots-list { padding:0 14px 10px 56px; display:flex; flex-direction:column; gap:3px; }
 
 .spot-item {
-display:flex; align-items:center; gap:7px;
-font-size:11.5px; color:var(–muted); padding:2px 0;
-transition:color 0.15s; cursor:pointer;
+  display:flex; align-items:center; gap:7px;
+  font-size:11.5px; color:var(--muted); padding:2px 0;
+  transition:color 0.15s; cursor:pointer;
 }
-.spot-item:hover { color:var(–text); }
+.spot-item:hover { color:var(--text); }
 .spot-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
 
 .spot-item.optional::after {
-content:‘opcional’; font-size:9px; color:var(–gold);
-margin-left:4px; background:rgba(201,168,76,0.12);
-padding:1px 5px; border-radius:3px; flex-shrink:0;
+  content:'opcional'; font-size:9px; color:var(--gold);
+  margin-left:4px; background:rgba(201,168,76,0.12);
+  padding:1px 5px; border-radius:3px; flex-shrink:0;
 }
 
-.divider { height:1px; background:var(–border); margin:0 14px; }
+.divider { height:1px; background:var(--border); margin:0 14px; }
 
 .bus-route {
-display:flex; align-items:center; gap:6px; padding:4px 14px;
+  display:flex; align-items:center; gap:6px; padding:4px 14px;
 }
 .bus-line {
-flex:1; height:1px;
-background:repeating-linear-gradient(to right,var(–gold) 0,var(–gold) 5px,transparent 5px,transparent 10px);
+  flex:1; height:1px;
+  background:repeating-linear-gradient(to right,var(--gold) 0,var(--gold) 5px,transparent 5px,transparent 10px);
 }
-.bus-km { font-size:10px; color:var(–gold); white-space:nowrap; }
+.bus-km { font-size:10px; color:var(--gold); white-space:nowrap; }
 
 /* LEGEND */
 #legend {
-position:absolute; bottom:20px; right:12px;
-background:rgba(19,21,28,0.92); backdrop-filter:blur(6px);
-border:1px solid var(–border); border-radius:10px;
-padding:10px 12px; z-index:500;
+  position:absolute; bottom:20px; right:12px;
+  background:rgba(19,21,28,0.92); backdrop-filter:blur(6px);
+  border:1px solid var(--border); border-radius:10px;
+  padding:10px 12px; z-index:500;
 }
-#legend h4 { font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(–gold); margin-bottom:7px; }
-.legend-item { display:flex; align-items:center; gap:7px; font-size:10px; color:var(–muted); margin-bottom:4px; }
-.legend-road { width:22px; height:2px; background:var(–gold); border-radius:1px; }
-.legend-dot { width:9px; height:9px; border-radius:50%; border:2px solid var(–dark); }
+#legend h4 { font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); margin-bottom:7px; }
+.legend-item { display:flex; align-items:center; gap:7px; font-size:10px; color:var(--muted); margin-bottom:4px; }
+.legend-road { width:22px; height:2px; background:var(--gold); border-radius:1px; }
+.legend-dot { width:9px; height:9px; border-radius:50%; border:2px solid var(--dark); }
 
 /* LOADING */
 #loading {
-position:absolute; top:12px; left:50%; transform:translateX(-50%);
-background:var(–panel2); border:1px solid var(–gold);
-padding:6px 16px; border-radius:20px; font-size:11px;
-color:var(–gold); z-index:600;
-display:flex; align-items:center; gap:6px;
-transition:opacity 0.4s;
+  position:absolute; top:12px; left:50%; transform:translateX(-50%);
+  background:var(--panel2); border:1px solid var(--gold);
+  padding:6px 16px; border-radius:20px; font-size:11px;
+  color:var(--gold); z-index:600;
+  display:flex; align-items:center; gap:6px;
+  transition:opacity 0.4s;
 }
 .spin { animation:spin 1s linear infinite; display:inline-block; }
 @keyframes spin { to { transform:rotate(360deg); } }
 
 /* POPUP */
 .leaflet-popup-content-wrapper {
-background:var(–panel2) !important;
-border:1px solid var(–border) !important;
-border-radius:8px !important; color:var(–text) !important;
-box-shadow:0 4px 24px rgba(0,0,0,0.6) !important;
+  background:var(--panel2) !important;
+  border:1px solid var(--border) !important;
+  border-radius:8px !important; color:var(--text) !important;
+  box-shadow:0 4px 24px rgba(0,0,0,0.6) !important;
 }
-.leaflet-popup-tip { background:var(–panel2) !important; }
-.leaflet-popup-content { margin:12px 14px !important; font-family:‘DM Sans’,sans-serif !important; }
-.popup-city { font-family:‘Playfair Display’,serif; font-size:14px; color:var(–gold); margin-bottom:6px; }
-.popup-spots { font-size:11px; color:var(–muted); line-height:1.8; }
-.popup-spot::before { content:’→ ’; color:var(–gold); }
+.leaflet-popup-tip { background:var(--panel2) !important; }
+.leaflet-popup-content { margin:12px 14px !important; font-family:'DM Sans',sans-serif !important; }
+.popup-city { font-family:'Playfair Display',serif; font-size:14px; color:var(--gold); margin-bottom:6px; }
+.popup-spots { font-size:11px; color:var(--muted); line-height:1.8; }
+.popup-spot::before { content:'→ '; color:var(--gold); }
 </style>
-
 </head>
 <body>
 <div id="app">
@@ -251,30 +249,28 @@ box-shadow:0 4px 24px rgba(0,0,0,0.6) !important;
       <span class="tab-city-name" id="tab-label">🍁 Ver itinerario</span>
       <span class="tab-toggle" id="tab-btn">↑ Abrir</span>
     </div>
-    
-<div id="sidebar-header">
-  <div class="flag-row">
-    <span style="color:var(--maple)">🍁</span>
-    <span class="route-tag">YUL → YYZ · 8 noches</span>
-  </div>
-  <h1>Este <em>Canadiense</em> Extraordinario</h1>
-  <div class="trip-meta">31 MAY – 08 JUN 2026 · 4 adultos · $2,399 USD p/p</div>
-</div>
 
-<div id="filter-tabs">
-  <button class="filter-btn active" onclick="filterCity('all',this)">Todos</button>
-  <button class="filter-btn" onclick="filterCity('montreal',this)">Montréal</button>
-  <button class="filter-btn" onclick="filterCity('quebec',this)">Québec</button>
-  <button class="filter-btn" onclick="filterCity('tremblant',this)">Tremblant</button>
-  <button class="filter-btn" onclick="filterCity('ottawa',this)">Ottawa</button>
-  <button class="filter-btn" onclick="filterCity('milislas',this)">Mil Islas</button>
-  <button class="filter-btn" onclick="filterCity('toronto',this)">Toronto</button>
-  <button class="filter-btn" onclick="filterCity('niagara',this)">Niágara</button>
-</div>
+    <div id="sidebar-header">
+      <div class="flag-row">
+        <span style="color:var(--maple)">🍁</span>
+        <span class="route-tag">YUL → YYZ · 8 noches</span>
+      </div>
+      <h1>Este <em>Canadiense</em> Extraordinario</h1>
+      <div class="trip-meta">31 MAY – 08 JUN 2026 · 4 adultos · $2,399 USD p/p</div>
+    </div>
 
-<div id="timeline"></div>
-```
+    <div id="filter-tabs">
+      <button class="filter-btn active" onclick="filterCity('all',this)">Todos</button>
+      <button class="filter-btn" onclick="filterCity('montreal',this)">Montréal</button>
+      <button class="filter-btn" onclick="filterCity('quebec',this)">Québec</button>
+      <button class="filter-btn" onclick="filterCity('tremblant',this)">Tremblant</button>
+      <button class="filter-btn" onclick="filterCity('ottawa',this)">Ottawa</button>
+      <button class="filter-btn" onclick="filterCity('milislas',this)">Mil Islas</button>
+      <button class="filter-btn" onclick="filterCity('toronto',this)">Toronto</button>
+      <button class="filter-btn" onclick="filterCity('niagara',this)">Niágara</button>
+    </div>
 
+    <div id="timeline"></div>
   </div>
 </div>
 
@@ -580,6 +576,5 @@ sidebar.addEventListener('touchend', e => {
 
 renderTimeline('all');
 </script>
-
 </body>
 </html>
