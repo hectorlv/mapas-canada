@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tour Este Canadiense - Héctor & Familia</title>
+    
+    <!-- Tailwind CSS para los estilos rápidos de la interfaz -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet CSS para el mapa -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- FontAwesome para iconitos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        #map {
+            height: 100vh;
+            width: 100vw;
+            z-index: 1; /* El mapa va al fondo */
+        }
+
+        /* Panel flotante de información */
+        #floating-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 350px;
+            max-height: 80vh;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 0.75rem;
+        }
+
+        /* Ajustes para móviles */
+        @media (max-width: 768px) {
+            #floating-panel {
+                top: auto;
+                bottom: 20px;
+                right: 50%;
+                transform: translateX(50%);
+                width: 90%;
+                max-width: none;
+                max-height: 40vh;
+            }
+        }
+
+        /* Estilo para los popups del mapa */
+        .leaflet-popup-content-wrapper {
+            border-radius: 0.5rem;
+            padding: 0.25rem;
+        }
+        .leaflet-popup-content h3 {
+            margin: 0 0 0.5rem 0;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #1e3a8a;
+        }
+        .leaflet-popup-content p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #374151;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Contenedor del Mapa -->
+    <div id="map"></div>
+
+    <!-- Interfaz sobrepuesta -->
+    <div id="floating-panel" class="p-5 flex flex-col gap-4 border border-gray-200">
+        <div class="flex items-center gap-3 border-b border-gray-300 pb-3">
+            <div class="bg-blue-600 text-white p-2 rounded-lg">
+                <i class="fa-solid fa-route text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-gray-800">Ruta Canadá</h1>
+                <p class="text-sm text-gray-500">8 noches, 4 adultos</p>
+            </div>
+        </div>
+        
+        <div class="text-sm text-gray-700">
+            <p class="mb-2"><strong><i class="fa-solid fa-bus text-blue-500 mr-1"></i> Traslados en autobús</strong></p>
+            <p class="mb-3 text-xs text-gray-500">Haz clic en los marcadores en el mapa para ver los detalles de cada parada y sugerencias de actividades extra.</p>
+            
+            <ul class="space-y-3 relative before:absolute before:inset-0 before:ml-2 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-300 before:to-transparent">
+                <!-- Lista del Itinerario -->
+                <li class="relative flex items-center gap-4">
+                    <div class="absolute left-0 w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow"></div>
+                    <div class="ml-8">
+                        <span class="font-bold">1. Montreal</span> <span class="text-xs text-gray-500">(Días 1-3)</span>
+                    </div>
+                </li>
+                <li class="relative flex items-center gap-4">
+                    <div class="absolute left-0 w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow"></div>
+                    <div class="ml-8">
+                        <span class="font-bold">2. Quebec</span> <span class="text-xs text-gray-500">(Días 3-5)</span>
+                    </div>
+                </li>
+                <li class="relative flex items-center gap-4">
+                    <div class="absolute left-0 w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow"></div>
+                    <div class="ml-8">
+                        <span class="font-bold">3. Mont-Tremblant</span> <span class="text-xs text-gray-500">(Día 5-6)</span>
+                    </div>
+                </li>
+                <li class="relative flex items-center gap-4">
+                    <div class="absolute left-0 w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow"></div>
+                    <div class="ml-8">
+                        <span class="font-bold">4. Ottawa</span> <span class="text-xs text-gray-500">(Día 6-7)</span>
+                    </div>
+                </li>
+                <li class="relative flex items-center gap-4">
+                    <div class="absolute left-0 w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow"></div>
+                    <div class="ml-8">
+                        <span class="font-bold">5. Toronto / Niágara</span> <span class="text-xs text-gray-500">(Días 7-9)</span>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <script>
+        // Inicializar el mapa, centrado en el este de Canadá
+        const map = L.map('map').setView([45.2, -75.5], 6);
+
+        // Cargar los "tiles" (imágenes del mapa) desde OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Datos del itinerario con coordenadas (Latitud, Longitud)
+        // La información extra tiene el toque que platicamos.
+        const paradas = [
+            {
+                nombre: "Montreal",
+                coords: [45.5017, -73.5673],
+                dia: "Días 1, 2 y 3",
+                distancia: "Inicio",
+                icono: "fa-city",
+                info: "Llegada. El tour cubre el Viejo Montreal y barrios. <br><br><b>Sugerencia de tiempo libre:</b> Lánzate al <b>Planetario Rio Tinto Alcan</b> (ideal para ti que te gusta el espacio) o busca mesas de ajedrez en la Place des Festivals."
+            },
+            {
+                nombre: "Quebec",
+                coords: [46.8139, -71.2080],
+                dia: "Días 3, 4 y 5",
+                distancia: "252 Km desde Montreal",
+                icono: "fa-chess-rook", // Icono de ajedrez para las fortificaciones
+                info: "La ciudad más antigua. Tienen un día libre completo. <br><br><b>Sugerencia:</b> Más allá de las ballenas, checa las fortificaciones de la ciudad militar o la física del salto de agua en las <b>Cataratas de Montmorency</b>."
+            },
+            {
+                nombre: "Mont-Tremblant",
+                coords: [46.1185, -74.5962],
+                dia: "Día 5 y 6",
+                distancia: "375 Km desde Quebec",
+                icono: "fa-mountain",
+                info: "Naturaleza pura y el Sentier des Cimes. <br><br><b>Sugerencia:</b> Sube en el teleférico para analizar la orografía, o de noche checa la experiencia inmersiva multimedia <b>Tonga Lumina</b>."
+            },
+            {
+                nombre: "Ottawa",
+                coords: [45.4215, -75.6972],
+                dia: "Día 6 y 7",
+                distancia: "164 Km desde Tremblant",
+                icono: "fa-building-columns",
+                info: "Visita al Parque Omega en la ruta. En la ciudad verán el Parlamento. <br><br><b>Sugerencia:</b> Escápense un rato al <b>Museo de Ciencia y Tecnología</b>. Tienen exhibiciones súper chidas de física y programación antigua."
+            },
+            {
+                nombre: "Mil Islas",
+                coords: [44.3333, -75.9833],
+                dia: "Día 7",
+                distancia: "En ruta a Toronto",
+                icono: "fa-ship",
+                info: "Paseo de una hora en barco por el Río San Lorenzo. Es una joya ver cómo construyen mansiones completas en islitas enanas."
+            },
+            {
+                nombre: "Toronto",
+                coords: [43.6510, -79.3470],
+                dia: "Días 7, 8 y 9",
+                distancia: "403 Km desde Ottawa",
+                icono: "fa-tower-observation",
+                info: "Capital económica de Canadá. <br><br><b>Sugerencia:</b> Busca reta de ajedrez en <b>Nathan Phillips Square</b>, y definitivamente sube a la <b>Torre CN</b> (ingeniería pura para soportar los vientos y la gravedad)."
+            },
+            {
+                nombre: "Cataratas del Niágara",
+                coords: [43.0896, -79.0849],
+                dia: "Día 8 (Ida y vuelta)",
+                distancia: "132 Km desde Toronto (x2)",
+                icono: "fa-water",
+                info: "Paseo en el barco a los pies de las cataratas y viñedo para catar Vino de Hielo. Un despliegue masivo de fuerza natural."
+            }
+        ];
+
+        // Arreglo para guardar las coordenadas y dibujar la línea del autobús
+        const rutaCoordenadas = [];
+
+        // Ícono personalizado (punto azul simple) para usar con Leaflet
+        const customIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: `<div style="background-color: #2563eb; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>`,
+            iconSize: [14, 14],
+            iconAnchor: [7, 7]
+        });
+
+        // Iterar sobre las paradas para poner los marcadores
+        paradas.forEach((parada, index) => {
+            // Añadir coordenada a la ruta
+            rutaCoordenadas.push(parada.coords);
+
+            // Crear marcador
+            const marker = L.marker(parada.coords, {icon: customIcon}).addTo(map);
+
+            // Armar el contenido del popup (globo de información)
+            const popupContent = `
+                <div class="min-w-[200px]">
+                    <h3><i class="fa-solid ${parada.icono} mr-2"></i> ${parada.nombre}</h3>
+                    <p class="text-xs text-gray-500 mb-2 font-bold">${parada.dia} | ${parada.distancia}</p>
+                    <p>${parada.info}</p>
+                </div>
+            `;
+
+            // Vincular popup
+            marker.bindPopup(popupContent);
+        });
+
+        // Como Niágara es ida y vuelta a Toronto, agregamos la coordenada de Toronto al final 
+        // para que la línea roja regrese al origen.
+        rutaCoordenadas.push(paradas[5].coords); 
+
+        // Dibujar la polilínea (la ruta del autobús)
+        const rutaBus = L.polyline(rutaCoordenadas, {
+            color: '#dc2626', // Rojo para que resalte
+            weight: 3,
+            opacity: 0.7,
+            dashArray: '8, 8', // Línea punteada
+            lineJoin: 'round'
+        }).addTo(map);
+
+        // Ajustar el mapa para que todas las líneas y pines se vean en pantalla de golpe
+        map.fitBounds(rutaBus.getBounds(), { padding: [50, 50] });
+
+    </script>
+</body>
+</html>
+
