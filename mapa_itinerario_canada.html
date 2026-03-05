@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Canadá del Este (2026) — Mapa del itinerario</title>
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <style>
+    :root{
+      --bg: #0b1020;
+      --panel: rgba(255,255,255,.92);
+      --ink: #0f172a;
+      --muted: #64748b;
+      --shadow: 0 10px 30px rgba(0,0,0,.25);
+      --radius: 14px;
+    }
+    html,body{height:100%; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";}
+    #app{height:100%; display:flex; flex-direction:column;}
+    header{
+      padding: 12px 14px;
+      background: linear-gradient(135deg, #111827, #0b1020);
+      color: #fff;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    header .title{
+      display:flex; flex-direction:column; line-height:1.1;
+    }
+    header .title strong{font-size: 15px; letter-spacing:.2px;}
+    header .title span{font-size: 12px; color: rgba(255,255,255,.75);}
+    header .actions{
+      display:flex; gap:8px; align-items:center;
+    }
+    button{
+      appearance:none; border:0; cursor:pointer;
+      padding: 9px 10px;
+      border-radius: 10px;
+      font-weight: 600;
+      background: rgba(255,255,255,.12);
+      color:#fff;
+      border: 1px solid rgba(255,255,255,.18);
+    }
+    button:hover{background: rgba(255,255,255,.18);}
+    main{position:relative; flex:1; min-height:0;}
+    #map{height:100%; width:100%;}
+
+    /* Side panel */
+    .panel{
+      position:absolute;
+      top: 12px;
+      left: 12px;
+      width: min(360px, calc(100% - 24px));
+      max-height: calc(100% - 24px);
+      overflow:auto;
+      background: var(--panel);
+      color: var(--ink);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 12px 12px 10px;
+      border: 1px solid rgba(15,23,42,.08);
+      backdrop-filter: blur(10px);
+    }
+    .panel h2{margin: 0 0 6px; font-size: 14px;}
+    .panel p{margin: 6px 0; font-size: 12.5px; color: var(--muted);}
+    .panel .section{margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(15,23,42,.14);}
+    .list{display:flex; flex-direction:column; gap:8px; margin-top: 8px;}
+    .item{
+      display:grid;
+      grid-template-columns: 18px 1fr;
+      gap: 8px;
+      align-items:start;
+      padding: 8px 9px;
+      border-radius: 12px;
+      background: rgba(15,23,42,.04);
+      border: 1px solid rgba(15,23,42,.06);
+    }
+    .dot{
+      width: 12px; height: 12px; margin-top: 2px;
+      border-radius: 999px; background: #111827;
+      border: 2px solid rgba(255,255,255,.9);
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    }
+    .item strong{font-size: 12.5px;}
+    .item span{display:block; font-size: 12px; color: var(--muted); margin-top:2px;}
+    .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 11px; background: rgba(15,23,42,.06); padding: 2px 6px; border-radius: 8px; border: 1px solid rgba(15,23,42,.08);}
+    .footer-note{margin-top:10px; font-size: 11.5px; color: var(--muted);}
+
+    /* Leaflet tweaks */
+    .leaflet-control-layers{border-radius: 12px; box-shadow: var(--shadow);}
+    .leaflet-control-layers-expanded{padding: 10px;}
+    .leaflet-popup-content{margin: 10px 12px;}
+    .leaflet-popup-content h3{margin:0 0 4px; font-size: 13px;}
+    .leaflet-popup-content p{margin: 0; font-size: 12px; color: #475569;}
+
+    @media (max-width: 640px){
+      header{gap:10px}
+      .panel{top:auto; bottom: 12px; left: 12px;}
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="title">
+      <strong>Mapa — Canadá del Este (8 noches)</strong>
+      <span>Montreal → Quebec → Mont‑Tremblant → Ottawa → Toronto → Niagara</span>
+    </div>
+    <div class="actions">
+      <button id="btnFit">Ver todo</button>
+      <button id="btnTogglePanel">Panel</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="map"></div>
+
+    <aside class="panel" id="panel">
+      <h2>Qué estás viendo</h2>
+      <p>Marcadores con los <b>puntos principales</b> por ciudad y líneas con los <b>traslados en autobús</b> entre ciudades (aprox.).</p>
+
+      <div class="section">
+        <h2>Traslados en autobús (aprox.)</h2>
+        <div class="list" id="routeList"></div>
+        <div class="footer-note">
+          Tip: si te estorban cosas, usa el control de “Capas” en la esquina (puedes apagar ciudades/rutas).
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Atajos</h2>
+        <p><span class="kbd">clic</span> en un marcador para ver detalles. <span class="kbd">clic</span> en una ruta para ver su nombre.</p>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script>
+  // ====== Datos (coords aproximadas pero muy cercanas) ======
+  const cities = {
+    "Montreal": {
+      color: "#2563eb",
+      points: [
+        {name:"Centro (hotel)", lat:45.5019, lon:-73.5674, note:"Punto base (centro de Montreal)."},
+        {name:"Vieux‑Montréal / Puerto Viejo", lat:45.5075, lon:-73.5540, note:"Paseo, restaurantes, vistas al río."},
+        {name:"Basílica Notre‑Dame", lat:45.5045, lon:-73.5561, note:"Entrada suele ser aparte."},
+        {name:"Mercado Jean‑Talon", lat:45.5352, lon:-73.6141, note:"Mercado local (tour gastronómico)."},
+        {name:"Parque Mont‑Royal (mirador)", lat:45.5048, lon:-73.5878, note:"La vista clásica de la ciudad."},
+        {name:"Parque La Fontaine", lat:45.5230, lon:-73.5696, note:"Cierre típico del paseo del Plateau."},
+        {name:"Schwartz’s Deli (St‑Laurent)", lat:45.5165, lon:-73.5792, note:"Smoked meat famoso (parada del tour)."},
+      ]
+    },
+    "Quebec City": {
+      color: "#7c3aed",
+      points: [
+        {name:"Centro (hotel)", lat:46.8139, lon:-71.2080, note:"Punto base (zona céntrica)."},
+        {name:"Château Frontenac", lat:46.8119, lon:-71.2050, note:"Icono del Viejo Quebec."},
+        {name:"Petit Champlain", lat:46.8110, lon:-71.2069, note:"Calles más bonitas para caminar."},
+        {name:"Terrasse Dufferin", lat:46.8126, lon:-71.2046, note:"Miradores frente al Frontenac."},
+        {name:"Plains of Abraham", lat:46.8019, lon:-71.2170, note:"Parque grande para paseo relajado."},
+        {name:"Cataratas Montmorency", lat:46.8903, lon:-71.1486, note:"Excursión opcional / día libre."},
+      ]
+    },
+    "Mont‑Tremblant": {
+      color: "#16a34a",
+      points: [
+        {name:"Pueblo peatonal Tremblant", lat:46.1185, lon:-74.5967, note:"Tiendas, restaurantes y actividades."},
+        {name:"Teleférico (base)", lat:46.1201, lon:-74.5963, note:"Subida panorámica (no incluida)."},
+        {name:"Sentier des Cimes Laurentides", lat:46.1955, lon:-74.3746, note:"Pasarela elevada + torre panorámica."},
+      ]
+    },
+    "Ottawa": {
+      color: "#ea580c",
+      points: [
+        {name:"Centro (hotel)", lat:45.4215, lon:-75.6972, note:"Punto base (downtown)."},
+        {name:"Parliament Hill", lat:45.4236, lon:-75.7009, note:"Foto obligada (exteriores)."},
+        {name:"Canal Rideau", lat:45.4242, lon:-75.6920, note:"Paseo bonito junto al canal."},
+        {name:"ByWard Market", lat:45.4285, lon:-75.6922, note:"Zona animada para cenar."},
+        {name:"Parc Omega (Montebello)", lat:45.6479, lon:-74.9405, note:"Visita en ruta (reserva de animales)."},
+      ]
+    },
+    "Toronto": {
+      color: "#dc2626",
+      points: [
+        {name:"Centro (hotel)", lat:43.6426, lon:-79.3871, note:"Zona Harbourfront / Downtown."},
+        {name:"CN Tower", lat:43.6426, lon:-79.3871, note:"Subida opcional."},
+        {name:"St. Lawrence Market", lat:43.6487, lon:-79.3716, note:"Mercado clásico para comer."},
+        {name:"Distillery District", lat:43.6503, lon:-79.3596, note:"Barrio histórico, cafés y tiendas."},
+        {name:"Old City Hall", lat:43.6526, lon:-79.3816, note:"Centro cívico."},
+        {name:"University of Toronto (St. George)", lat:43.6629, lon:-79.3957, note:"Zona bonita para caminar."},
+        {name:"Eaton Centre", lat:43.6544, lon:-79.3807, note:"Compras bajo techo."},
+        {name:"Aeropuerto YYZ", lat:43.6777, lon:-79.6248, note:"Salida / llegada."},
+      ]
+    },
+    "Niagara": {
+      color: "#0891b2",
+      points: [
+        {name:"Niagara Falls (Horseshoe)", lat:43.0799, lon:-79.0747, note:"El mirador clásico."},
+        {name:"Paseo en barco (Voyage to the Falls)", lat:43.0810, lon:-79.0737, note:"Incluido según itinerario."},
+        {name:"Niagara‑on‑the‑Lake", lat:43.2557, lon:-79.0745, note:"Pueblito victoriano."},
+        {name:"Château des Charmes (viñedo)", lat:43.1707, lon:-79.1434, note:"Degustación (incluida)."},
+      ]
+    },
+    "Mil Islas": {
+      color: "#0f766e",
+      points: [
+        {name:"Gananoque (crucero Mil Islas)", lat:44.3303, lon:-76.1661, note:"Punto típico de salida de cruceros."},
+      ]
+    }
+  };
+
+  const routes = [
+    {name:"Día 3: Montreal → Quebec (252 km)", from:"Montreal", fromCoord:[45.5019,-73.5674], to:"Quebec City", toCoord:[46.8139,-71.2080]},
+    {name:"Día 5: Quebec → Mont‑Tremblant (375 km)", from:"Quebec City", fromCoord:[46.8139,-71.2080], to:"Mont‑Tremblant", toCoord:[46.1185,-74.5967]},
+    {name:"Día 6: Tremblant → Parc Omega → Ottawa (164 km)", from:"Mont‑Tremblant", fromCoord:[46.1185,-74.5967], to:"Ottawa", toCoord:[45.4215,-75.6972], via:[45.6479,-74.9405]},
+    {name:"Día 7: Ottawa → Mil Islas (Gananoque) → Toronto (403 km)", from:"Ottawa", fromCoord:[45.4215,-75.6972], to:"Toronto", toCoord:[43.6426,-79.3871], via:[44.3303,-76.1661]},
+    {name:"Día 8: Toronto → Niagara → Toronto (264 km)", from:"Toronto", fromCoord:[43.6426,-79.3871], to:"Toronto", toCoord:[43.6426,-79.3871], via:[43.0799,-79.0747]},
+    {name:"Día 9: Toronto → Aeropuerto YYZ", from:"Toronto", fromCoord:[43.6426,-79.3871], to:"Aeropuerto YYZ", toCoord:[43.6777,-79.6248]},
+  ];
+
+  // ====== Mapa ======
+  const map = L.map('map', {zoomControl:true});
+
+  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // Capas por ciudad
+  const cityLayers = {};
+  const routeLayer = L.featureGroup().addTo(map);
+  const allMarkers = L.featureGroup().addTo(map);
+
+  function markerIcon(color){
+    // Simple circle marker using divIcon
+    return L.divIcon({
+      className: '',
+      html: `<div style="width:14px;height:14px;border-radius:999px;background:${color};border:2px solid rgba(255,255,255,.95);box-shadow:0 6px 16px rgba(0,0,0,.25)"></div>`,
+      iconSize: [14,14],
+      iconAnchor: [7,7],
+      popupAnchor: [0,-8]
+    });
+  }
+
+  for(const [city, cfg] of Object.entries(cities)){
+    const layer = L.featureGroup();
+    cfg.points.forEach(p => {
+      const m = L.marker([p.lat, p.lon], {icon: markerIcon(cfg.color)})
+        .bindPopup(`<h3>${p.name}</h3><p><b>${city}</b><br>${p.note || ""}</p>`);
+      layer.addLayer(m);
+      allMarkers.addLayer(m);
+    });
+    cityLayers[city] = layer.addTo(map);
+  }
+
+  // Rutas (polylines)
+  const routeStyles = [
+    {weight: 4, opacity: 0.9, dashArray: "8 6"},
+    {weight: 4, opacity: 0.9, dashArray: "10 6"},
+    {weight: 4, opacity: 0.9, dashArray: "12 8"},
+  ];
+
+  routes.forEach((r, idx) => {
+    const style = routeStyles[idx % routeStyles.length];
+    const latlngs = [r.fromCoord];
+    if(r.via) latlngs.push(r.via);
+    latlngs.push(r.toCoord);
+
+    const line = L.polyline(latlngs, {
+      color: "#111827",
+      ...style
+    }).bindTooltip(r.name, {sticky:true});
+
+    line.on('click', () => {
+      line.openTooltip();
+    });
+
+    routeLayer.addLayer(line);
+  });
+
+  // Layer control
+  const overlays = {...cityLayers, "Traslados (autobús)": routeLayer};
+  L.control.layers({"OSM": osm}, overlays, {collapsed:false}).addTo(map);
+
+  // Fit bounds
+  function fitAll(){
+    const group = L.featureGroup([allMarkers, routeLayer]);
+    map.fitBounds(group.getBounds().pad(0.15));
+  }
+  fitAll();
+
+  // Panel: list routes
+  const routeList = document.getElementById("routeList");
+  routes.forEach((r, i) => {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <div class="dot" style="background:#111827"></div>
+      <div>
+        <strong>${r.name}</strong>
+        <span>${r.from} → ${r.via ? "parada" + " → " : ""}${r.to}</span>
+      </div>
+    `;
+    div.style.cursor = "pointer";
+    div.onclick = () => {
+      // Zoom to that route
+      const latlngs = [r.fromCoord, ...(r.via ? [r.via] : []), r.toCoord];
+      map.fitBounds(L.latLngBounds(latlngs).pad(0.25));
+    };
+    routeList.appendChild(div);
+  });
+
+  // Buttons
+  document.getElementById("btnFit").addEventListener("click", fitAll);
+  const panel = document.getElementById("panel");
+  document.getElementById("btnTogglePanel").addEventListener("click", () => {
+    panel.style.display = (panel.style.display === "none") ? "block" : "none";
+  });
+
+  // Mobile: hide panel by default
+  if(window.matchMedia("(max-width: 640px)").matches){
+    panel.style.display = "none";
+  }
+</script>
+</body>
+</html>
