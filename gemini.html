@@ -3,47 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tour Este Canadiense - Héctor & Familia</title>
+    <title>Tour Canadá - Héctor & Familia (Rutas Reales)</title>
     
-    <!-- Tailwind CSS para los estilos rápidos de la interfaz -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Leaflet CSS para el mapa -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     
-    <!-- FontAwesome para iconitos -->
+    <!-- Leaflet Routing Machine CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
-        
-        #map {
-            height: 100vh;
-            width: 100vw;
-            z-index: 1; /* El mapa va al fondo */
-        }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: system-ui, -apple-system, sans-serif; }
+        #map { height: 100vh; width: 100vw; z-index: 1; }
 
-        /* Panel flotante de información */
+        /* Esconder la caja fea de instrucciones paso a paso del ruteo */
+        .leaflet-routing-container { display: none !important; }
+
+        /* Panel flotante de leyenda */
         #floating-panel {
             position: absolute;
             top: 20px;
             right: 20px;
             z-index: 1000;
-            max-width: 350px;
-            max-height: 80vh;
+            width: 320px;
+            max-height: 85vh;
             overflow-y: auto;
             background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(5px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            border-radius: 0.75rem;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-radius: 1rem;
         }
 
-        /* Ajustes para móviles */
         @media (max-width: 768px) {
             #floating-panel {
                 top: auto;
@@ -51,209 +46,229 @@
                 right: 50%;
                 transform: translateX(50%);
                 width: 90%;
-                max-width: none;
-                max-height: 40vh;
+                max-height: 35vh;
             }
         }
 
-        /* Estilo para los popups del mapa */
-        .leaflet-popup-content-wrapper {
-            border-radius: 0.5rem;
-            padding: 0.25rem;
+        /* Estilos de los popups del mapa */
+        .leaflet-popup-content-wrapper { border-radius: 0.75rem; padding: 0; overflow: hidden; }
+        .leaflet-popup-content { margin: 0; }
+        .popup-header { padding: 10px 15px; color: white; font-weight: bold; display: flex; align-items: center; gap: 8px;}
+        .popup-body { padding: 15px; font-size: 0.9rem; color: #374151; }
+        
+        /* Marcadores HTML personalizados */
+        .custom-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            color: white;
+            font-size: 14px;
         }
-        .leaflet-popup-content h3 {
-            margin: 0 0 0.5rem 0;
+
+        /* Etiquetas de los días en la carretera */
+        .route-label {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+        }
+        .route-label div {
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 12px;
             font-weight: bold;
-            font-size: 1.1rem;
-            color: #1e3a8a;
-        }
-        .leaflet-popup-content p {
-            margin: 0;
-            font-size: 0.9rem;
-            color: #374151;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            text-align: center;
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 relative">
 
-    <!-- Contenedor del Mapa -->
     <div id="map"></div>
 
-    <!-- Interfaz sobrepuesta -->
-    <div id="floating-panel" class="p-5 flex flex-col gap-4 border border-gray-200">
-        <div class="flex items-center gap-3 border-b border-gray-300 pb-3">
-            <div class="bg-blue-600 text-white p-2 rounded-lg">
-                <i class="fa-solid fa-route text-xl"></i>
-            </div>
+    <!-- Panel de Leyenda -->
+    <div id="floating-panel" class="flex flex-col border border-gray-200">
+        <div class="bg-gray-900 text-white p-4 rounded-t-2xl flex items-center justify-between">
             <div>
-                <h1 class="text-xl font-bold text-gray-800">Ruta Canadá</h1>
-                <p class="text-sm text-gray-500">8 noches, 4 adultos</p>
+                <h1 class="font-bold text-lg">Itinerario Héctor</h1>
+                <p class="text-xs opacity-80">Ruta por carretera · 8 Noches</p>
             </div>
+            <i class="fa-solid fa-map-location-dot text-2xl"></i>
         </div>
         
-        <div class="text-sm text-gray-700">
-            <p class="mb-2"><strong><i class="fa-solid fa-bus text-blue-500 mr-1"></i> Traslados en autobús</strong></p>
-            <p class="mb-3 text-xs text-gray-500">Haz clic en los marcadores en el mapa para ver los detalles de cada parada y sugerencias de actividades extra.</p>
+        <div class="p-4 flex flex-col gap-4 text-sm">
+            <p class="text-gray-600 text-xs">Puntos coloreados por ciudad. <i class="fa-solid fa-star text-yellow-500"></i> son lugares sugeridos para tus ratos libres.</p>
             
-            <ul class="space-y-3 relative before:absolute before:inset-0 before:ml-2 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-300 before:to-transparent">
-                <!-- Lista del Itinerario -->
-                <li class="relative flex items-center gap-4">
-                    <div class="absolute left-0 w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow"></div>
-                    <div class="ml-8">
-                        <span class="font-bold">1. Montreal</span> <span class="text-xs text-gray-500">(Días 1-3)</span>
-                    </div>
-                </li>
-                <li class="relative flex items-center gap-4">
-                    <div class="absolute left-0 w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow"></div>
-                    <div class="ml-8">
-                        <span class="font-bold">2. Quebec</span> <span class="text-xs text-gray-500">(Días 3-5)</span>
-                    </div>
-                </li>
-                <li class="relative flex items-center gap-4">
-                    <div class="absolute left-0 w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow"></div>
-                    <div class="ml-8">
-                        <span class="font-bold">3. Mont-Tremblant</span> <span class="text-xs text-gray-500">(Día 5-6)</span>
-                    </div>
-                </li>
-                <li class="relative flex items-center gap-4">
-                    <div class="absolute left-0 w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow"></div>
-                    <div class="ml-8">
-                        <span class="font-bold">4. Ottawa</span> <span class="text-xs text-gray-500">(Día 6-7)</span>
-                    </div>
-                </li>
-                <li class="relative flex items-center gap-4">
-                    <div class="absolute left-0 w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow"></div>
-                    <div class="ml-8">
-                        <span class="font-bold">5. Toronto / Niágara</span> <span class="text-xs text-gray-500">(Días 7-9)</span>
-                    </div>
-                </li>
-            </ul>
+            <div class="space-y-3">
+                <div class="flex items-center gap-3"><span class="w-4 h-4 rounded-full bg-[#2563eb]"></span> <b>Montreal</b> (Días 1-3)</div>
+                <div class="flex items-center gap-3"><span class="w-4 h-4 rounded-full bg-[#dc2626]"></span> <b>Quebec</b> (Días 3-5)</div>
+                <div class="flex items-center gap-3"><span class="w-4 h-4 rounded-full bg-[#16a34a]"></span> <b>Mont-Tremblant</b> (Días 5-6)</div>
+                <div class="flex items-center gap-3"><span class="w-4 h-4 rounded-full bg-[#9333ea]"></span> <b>Ottawa</b> (Días 6-7)</div>
+                <div class="flex items-center gap-3"><span class="w-4 h-4 rounded-full bg-[#ea580c]"></span> <b>Toronto / Niágara</b> (Días 7-9)</div>
+            </div>
+
+            <div class="mt-2 border-t pt-3">
+                <p class="font-bold text-gray-700 mb-2">Tipos de puntos:</p>
+                <div class="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                    <div><i class="fa-solid fa-bed text-gray-500"></i> Hoteles</div>
+                    <div><i class="fa-solid fa-camera text-gray-500"></i> Visitas del tour</div>
+                    <div><i class="fa-solid fa-bus text-gray-500"></i> En ruta</div>
+                    <div><i class="fa-solid fa-star text-yellow-500"></i> Sugerencias tuyas</div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Scripts de Leaflet y Routing -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
     
     <script>
-        // Inicializar el mapa, centrado en el este de Canadá
+        // Iniciar mapa
         const map = L.map('map').setView([45.2, -75.5], 6);
-
-        // Cargar los "tiles" (imágenes del mapa) desde OpenStreetMap
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
             maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution: '&copy; OpenStreetMap, &copy; CARTO'
         }).addTo(map);
 
-        // Datos del itinerario con coordenadas (Latitud, Longitud)
-        // La información extra tiene el toque que platicamos.
-        const paradas = [
-            {
-                nombre: "Montreal",
-                coords: [45.5017, -73.5673],
-                dia: "Días 1, 2 y 3",
-                distancia: "Inicio",
-                icono: "fa-city",
-                info: "Llegada. El tour cubre el Viejo Montreal y barrios. <br><br><b>Sugerencia de tiempo libre:</b> Lánzate al <b>Planetario Rio Tinto Alcan</b> (ideal para ti que te gusta el espacio) o busca mesas de ajedrez en la Place des Festivals."
-            },
-            {
-                nombre: "Quebec",
-                coords: [46.8139, -71.2080],
-                dia: "Días 3, 4 y 5",
-                distancia: "252 Km desde Montreal",
-                icono: "fa-chess-rook", // Icono de ajedrez para las fortificaciones
-                info: "La ciudad más antigua. Tienen un día libre completo. <br><br><b>Sugerencia:</b> Más allá de las ballenas, checa las fortificaciones de la ciudad militar o la física del salto de agua en las <b>Cataratas de Montmorency</b>."
-            },
-            {
-                nombre: "Mont-Tremblant",
-                coords: [46.1185, -74.5962],
-                dia: "Día 5 y 6",
-                distancia: "375 Km desde Quebec",
-                icono: "fa-mountain",
-                info: "Naturaleza pura y el Sentier des Cimes. <br><br><b>Sugerencia:</b> Sube en el teleférico para analizar la orografía, o de noche checa la experiencia inmersiva multimedia <b>Tonga Lumina</b>."
-            },
-            {
-                nombre: "Ottawa",
-                coords: [45.4215, -75.6972],
-                dia: "Día 6 y 7",
-                distancia: "164 Km desde Tremblant",
-                icono: "fa-building-columns",
-                info: "Visita al Parque Omega en la ruta. En la ciudad verán el Parlamento. <br><br><b>Sugerencia:</b> Escápense un rato al <b>Museo de Ciencia y Tecnología</b>. Tienen exhibiciones súper chidas de física y programación antigua."
-            },
-            {
-                nombre: "Mil Islas",
-                coords: [44.3333, -75.9833],
-                dia: "Día 7",
-                distancia: "En ruta a Toronto",
-                icono: "fa-ship",
-                info: "Paseo de una hora en barco por el Río San Lorenzo. Es una joya ver cómo construyen mansiones completas en islitas enanas."
-            },
-            {
-                nombre: "Toronto",
-                coords: [43.6510, -79.3470],
-                dia: "Días 7, 8 y 9",
-                distancia: "403 Km desde Ottawa",
-                icono: "fa-tower-observation",
-                info: "Capital económica de Canadá. <br><br><b>Sugerencia:</b> Busca reta de ajedrez en <b>Nathan Phillips Square</b>, y definitivamente sube a la <b>Torre CN</b> (ingeniería pura para soportar los vientos y la gravedad)."
-            },
-            {
-                nombre: "Cataratas del Niágara",
-                coords: [43.0896, -79.0849],
-                dia: "Día 8 (Ida y vuelta)",
-                distancia: "132 Km desde Toronto (x2)",
-                icono: "fa-water",
-                info: "Paseo en el barco a los pies de las cataratas y viñedo para catar Vino de Hielo. Un despliegue masivo de fuerza natural."
-            }
+        // Paleta de colores por ciudad
+        const colores = {
+            montreal: "#2563eb",  // Azul
+            quebec: "#dc2626",    // Rojo
+            tremblant: "#16a34a", // Verde
+            ottawa: "#9333ea",    // Morado
+            toronto: "#ea580c"    // Naranja
+        };
+
+        // Base de datos de todos los puntos
+        const puntos = [
+            // --- MONTREAL ---
+            { city: 'montreal', lat: 45.5066, lng: -73.5714, icon: 'fa-bed', title: 'Delta Montreal', type: 'Hotel' },
+            { city: 'montreal', lat: 45.5361, lng: -73.6150, icon: 'fa-camera', title: 'Mercado Jean-Talon', type: 'Día 2', desc: 'Degustación de productos locales y la energía del mercado.' },
+            { city: 'montreal', lat: 45.5165, lng: -73.5776, icon: 'fa-camera', title: 'Schwartz Deli', type: 'Día 2', desc: 'La mejor carne ahumada. Caminata por Boulevard St-Laurent.' },
+            { city: 'montreal', lat: 45.5269, lng: -73.5695, icon: 'fa-camera', title: 'Parque Lafontaine', type: 'Día 2', desc: 'Oasis verde para terminar la caminata por el barrio francés.' },
+            { city: 'montreal', lat: 45.5045, lng: -73.5560, icon: 'fa-camera', title: 'Basílica Notre-Dame / Viejo Puerto', type: 'Día 3', desc: 'Visita por el corazón histórico de la ciudad.' },
+            { city: 'montreal', lat: 45.5601, lng: -73.5498, icon: 'fa-star', title: 'Planetario Rio Tinto Alcan', type: 'Sugerencia: Espacio', desc: 'Increíbles proyecciones astronómicas. Ideal para tu lado físico y espacial.', isStar: true },
+            { city: 'montreal', lat: 45.4998, lng: -73.5674, icon: 'fa-star', title: 'Hotel Fairmont The Queen Elizabeth', type: 'Sugerencia: The Beatles', desc: 'Aquí Lennon y Yoko hicieron el Bed-In for Peace (Suite 1742).', isStar: true },
+            { city: 'montreal', lat: 45.5170, lng: -73.5695, icon: 'fa-star', title: 'Square Saint-Louis', type: 'Sugerencia: Ajedrez', desc: 'Plaza bonita donde a veces se arman retas de ajedrez callejero.', isStar: true },
+
+            // --- QUEBEC ---
+            { city: 'quebec', lat: 46.8093, lng: -71.2154, icon: 'fa-bed', title: 'Hilton Quebec', type: 'Hotel' },
+            { city: 'quebec', lat: 46.8119, lng: -71.2050, icon: 'fa-camera', title: 'Château Frontenac & Terrasse Dufferin', type: 'Día 3', desc: 'El hotel más fotografiado del mundo y vistas al río San Lorenzo.' },
+            { city: 'quebec', lat: 46.8015, lng: -71.2198, icon: 'fa-camera', title: 'Planicies de Abraham', type: 'Día 4', desc: 'El "Central Park" de Quebec, histórico y enorme.' },
+            { city: 'quebec', lat: 46.8906, lng: -71.1477, icon: 'fa-star', title: 'Cataratas de Montmorency', type: 'Sugerencia: Física Natural', desc: 'Catarata 30m más alta que Niágara. Gran exhibición de gravedad y fuerza hidráulica.', isStar: true },
+            { city: 'quebec', lat: 46.8125, lng: -71.2115, icon: 'fa-star', title: 'Fortificaciones de Quebec', type: 'Sugerencia: Ingeniería', desc: 'Única ciudad amurallada en Norteamérica. Arquitectura militar impecable.', isStar: true },
+
+            // --- TREMBLANT ---
+            { city: 'tremblant', lat: 46.1042, lng: -74.6156, icon: 'fa-camera', title: 'Sentier des Cimes', type: 'Día 5', desc: 'Torre panorámica de 40 metros para ver el bosque canadiense.' },
+            { city: 'tremblant', lat: 46.2118, lng: -74.5847, icon: 'fa-bed', title: 'Holiday Inn Express & Pueblo', type: 'Hotel & Visita' },
+            { city: 'tremblant', lat: 46.2155, lng: -74.5829, icon: 'fa-star', title: 'Tonga Lumina / Teleférico', type: 'Sugerencia: Tecnología', desc: 'Experiencia nocturna multimedia en el bosque o teleférico de día para ver la geografía.', isStar: true },
+
+            // --- OTTAWA & EN RUTA ---
+            { city: 'ottawa', lat: 45.6738, lng: -74.9388, icon: 'fa-bus', title: 'Parque Omega', type: 'Día 6 (En Ruta)', desc: 'Reserva de animales en libertad. Verán osos, alces, bisontes.' },
+            { city: 'ottawa', lat: 45.418, lng: -75.704, icon: 'fa-bed', title: 'Delta Ottawa', type: 'Hotel' },
+            { city: 'ottawa', lat: 45.4248, lng: -75.6992, icon: 'fa-camera', title: 'Parlamento Canadiense', type: 'Día 6', desc: 'Visita panorámica por el centro político de Canadá.' },
+            { city: 'ottawa', lat: 45.4034, lng: -75.6186, icon: 'fa-star', title: 'Museo de Ciencia y Tecnología', type: 'Sugerencia: Ciencia', desc: 'Exhibiciones de física, programación antigua, locomotoras y el cosmos.', isStar: true },
+
+            // --- TORONTO & NIÁGARA & MIL ISLAS ---
+            { city: 'toronto', lat: 44.3780, lng: -75.9329, icon: 'fa-ship', title: 'Crucero Mil Islas', type: 'Día 7 (En Ruta)', desc: 'Navegación entre las mini-islas del Río San Lorenzo.' },
+            { city: 'toronto', lat: 43.6405, lng: -79.3768, icon: 'fa-bed', title: 'Westin Harbour Castle', type: 'Hotel' },
+            { city: 'toronto', lat: 43.0799, lng: -79.0747, icon: 'fa-water', title: 'Cataratas del Niágara', type: 'Día 8', desc: 'Paseo en el barco Voyage to the Falls a los pies de la herradura.' },
+            { city: 'toronto', lat: 43.1558, lng: -79.1368, icon: 'fa-camera', title: 'Château des Charmes', type: 'Día 8', desc: 'Viñedo para degustar el famoso Vino de Hielo.' },
+            { city: 'toronto', lat: 43.6480, lng: -79.3710, icon: 'fa-camera', title: 'St. Lawrence Market / Destilerías', type: 'Día 9', desc: 'Recorrido por los distritos históricos antes de ir al aeropuerto.' },
+            { city: 'toronto', lat: 43.6425, lng: -79.3870, icon: 'fa-star', title: 'Torre CN', type: 'Sugerencia: Física Estructural', desc: 'Sube al piso de vidrio a 342m. Una maravilla de la ingeniería contra vientos.', isStar: true },
+            { city: 'toronto', lat: 43.6534, lng: -79.3832, icon: 'fa-star', title: 'Nathan Phillips Square', type: 'Sugerencia: Ajedrez', desc: 'Junto al Ayuntamiento, busca mesas donde juegan ajedrez rápido.', isStar: true },
         ];
 
-        // Arreglo para guardar las coordenadas y dibujar la línea del autobús
-        const rutaCoordenadas = [];
+        // Función para agregar los marcadores al mapa
+        puntos.forEach(p => {
+            const color = colores[p.city];
+            // Si es estrella, pintar de amarillo dorado, si no, del color de la ciudad
+            const bgColor = p.isStar ? '#eab308' : color;
+            const size = p.isStar ? '32px' : '28px'; // Hacer las estrellas un pelín más grandes
 
-        // Ícono personalizado (punto azul simple) para usar con Leaflet
-        const customIcon = L.divIcon({
-            className: 'custom-div-icon',
-            html: `<div style="background-color: #2563eb; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>`,
-            iconSize: [14, 14],
-            iconAnchor: [7, 7]
-        });
+            const iconHtml = `<div class="custom-marker" style="background-color: ${bgColor}; width: ${size}; height: ${size};">
+                                <i class="fa-solid ${p.icon}"></i>
+                              </div>`;
+            
+            const customIcon = L.divIcon({
+                className: '',
+                html: iconHtml,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+            });
 
-        // Iterar sobre las paradas para poner los marcadores
-        paradas.forEach((parada, index) => {
-            // Añadir coordenada a la ruta
-            rutaCoordenadas.push(parada.coords);
+            const marker = L.marker([p.lat, p.lng], {icon: customIcon}).addTo(map);
 
-            // Crear marcador
-            const marker = L.marker(parada.coords, {icon: customIcon}).addTo(map);
-
-            // Armar el contenido del popup (globo de información)
             const popupContent = `
-                <div class="min-w-[200px]">
-                    <h3><i class="fa-solid ${parada.icono} mr-2"></i> ${parada.nombre}</h3>
-                    <p class="text-xs text-gray-500 mb-2 font-bold">${parada.dia} | ${parada.distancia}</p>
-                    <p>${parada.info}</p>
+                <div class="popup-header" style="background-color: ${bgColor}">
+                    <i class="fa-solid ${p.icon}"></i> ${p.title}
+                </div>
+                <div class="popup-body">
+                    <p class="font-bold mb-1">${p.type}</p>
+                    <p>${p.desc}</p>
                 </div>
             `;
-
-            // Vincular popup
             marker.bindPopup(popupContent);
         });
 
-        // Como Niágara es ida y vuelta a Toronto, agregamos la coordenada de Toronto al final 
-        // para que la línea roja regrese al origen.
-        rutaCoordenadas.push(paradas[5].coords); 
+        // -------------------------------------------------------------
+        // RUTAS REALES POR CARRETERA USANDO OSRM
+        // -------------------------------------------------------------
+        
+        // Función para trazar rutas y poner el letrerito del "Día" a la mitad
+        function trazarRuta(inicio, fin, colorLinea, etiqueta) {
+            const control = L.Routing.control({
+                waypoints: [L.latLng(inicio), L.latLng(fin)],
+                router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
+                lineOptions: { styles: [{color: colorLinea, opacity: 0.8, weight: 4}] },
+                createMarker: function() { return null; }, // No poner marcadores extra de inicio/fin
+                show: false, // Esconder instrucciones
+                addWaypoints: false,
+                fitSelectedRoutes: false
+            }).addTo(map);
 
-        // Dibujar la polilínea (la ruta del autobús)
-        const rutaBus = L.polyline(rutaCoordenadas, {
-            color: '#dc2626', // Rojo para que resalte
-            weight: 3,
-            opacity: 0.7,
-            dashArray: '8, 8', // Línea punteada
-            lineJoin: 'round'
-        }).addTo(map);
+            // Cuando la ruta se calcula (toma 1 o 2 segs por la API de internet)
+            control.on('routesfound', function(e) {
+                const coordenadas = e.routes[0].coordinates;
+                // Buscar el punto medio de la ruta trazada para poner la etiqueta
+                const mitad = coordenadas[Math.floor(coordenadas.length / 2)];
 
-        // Ajustar el mapa para que todas las líneas y pines se vean en pantalla de golpe
-        map.fitBounds(rutaBus.getBounds(), { padding: [50, 50] });
+                const labelIcon = L.divIcon({
+                    className: 'route-label',
+                    html: `<div style="background-color:${colorLinea}; color:white;">${etiqueta}</div>`,
+                    iconSize: [120, 30],
+                    iconAnchor: [60, 15]
+                });
+                
+                L.marker(mitad, {icon: labelIcon, zIndexOffset: 1000}).addTo(map);
+            });
+        }
+
+        // Trazamos los tramos en orden, conectando las ciudades y paradas en ruta
+        // Montreal (Delta) a Quebec (Hilton)
+        trazarRuta([45.5066, -73.5714], [46.8093, -71.2154], colores.quebec, "Día 3: Hacia Quebec");
+        
+        // Quebec a Tremblant (Village)
+        trazarRuta([46.8093, -71.2154], [46.2118, -74.5847], colores.tremblant, "Día 5: Hacia Tremblant");
+        
+        // Tremblant a Parque Omega
+        trazarRuta([46.2118, -74.5847], [45.6738, -74.9388], colores.ottawa, "Día 6: Hacia P. Omega");
+        // Parque Omega a Ottawa (Delta)
+        trazarRuta([45.6738, -74.9388], [45.418, -75.704], colores.ottawa, "Día 6: Hacia Ottawa");
+        
+        // Ottawa a Mil Islas (Rockport)
+        trazarRuta([45.418, -75.704], [44.3780, -75.9329], colores.toronto, "Día 7: Hacia Mil Islas");
+        // Mil Islas a Toronto (Westin)
+        trazarRuta([44.3780, -75.9329], [43.6405, -79.3768], colores.toronto, "Día 7: Hacia Toronto");
+        
+        // Toronto a Niágara
+        trazarRuta([43.6405, -79.3768], [43.0799, -79.0747], colores.toronto, "Día 8: Ida a Niágara");
+        // Niágara a Toronto (para que dibuje el regreso)
+        trazarRuta([43.0799, -79.0747], [43.6405, -79.3768], colores.toronto, "Día 8: Regreso a Toronto");
 
     </script>
 </body>
 </html>
-
