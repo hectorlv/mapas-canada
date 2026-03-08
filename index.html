@@ -1,18 +1,1253 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Inicio</title>
-</head>
-<body>
-  <h1>Inicio</h1>
-  <nav>
-    <ul>
-      <li><a href="chatgpt.html">Chat GPT</a></li>
-      <li><a href="gemini.html">Gemini</a></li>
-      <li><a href="claude.html">Claude</a></li>
-    </ul>
-  </nav>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
+    <title>Este Canadiense Extraordinario</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <style>
+      :root {
+        --gold: #c9a84c;
+        --dark: #0d0f14;
+        --panel: #13151c;
+        --panel2: #1a1d28;
+        --border: rgba(201, 168, 76, 0.22);
+        --text: #e8e4da;
+        --muted: #7a7669;
+        --maple: #c0392b;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+        background: var(--dark);
+        color: var(--text);
+        font-family: "DM Sans", sans-serif;
+      }
+
+      #app {
+        display: flex;
+        height: 100vh;
+      }
+
+      #map-wrap {
+        flex: 1;
+        position: relative;
+        min-width: 0;
+      }
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+
+      .leaflet-layer,
+      .leaflet-control-zoom-in,
+      .leaflet-control-zoom-out,
+      .leaflet-control-attribution {
+        filter: invert(100%) hue-rotate(180deg) brightness(83%) contrast(85%)
+          saturate(55%);
+      }
+
+      /* ── DESKTOP SIDEBAR ─── */
+      #sidebar {
+        width: 340px;
+        min-width: 340px;
+        background: var(--panel);
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid var(--border);
+        overflow: hidden;
+        z-index: 900;
+        order: -1;
+      }
+
+      /* ── MOBILE BOTTOM SHEET ─── */
+      @media (max-width: 768px) {
+        #app {
+          flex-direction: column;
+        }
+
+        #map-wrap {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 52px;
+          height: auto;
+        }
+
+        #sidebar {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          width: 100%;
+          min-width: unset;
+          height: 60vh;
+          border-right: none;
+          border-top: 1px solid var(--border);
+          border-radius: 16px 16px 0 0;
+          z-index: 900;
+          transform: translateY(calc(60vh - 52px));
+          transition: transform 0.35s cubic-bezier(0.32, 0, 0.2, 1);
+          order: 0;
+        }
+        #sidebar.open {
+          transform: translateY(0);
+        }
+
+        #drag-handle {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 22px;
+          padding-top: 10px;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
+        #drag-handle::before {
+          content: "";
+          width: 36px;
+          height: 4px;
+          background: var(--border);
+          border-radius: 2px;
+        }
+
+        #mobile-tab {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 4px 16px 8px;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
+        .tab-label {
+          font-family: "Playfair Display", serif;
+          font-size: 14px;
+          font-style: italic;
+          color: var(--gold);
+        }
+        .tab-toggle {
+          font-size: 10px;
+          color: var(--muted);
+          background: var(--panel2);
+          border: 1px solid var(--border);
+          padding: 3px 10px;
+          border-radius: 12px;
+        }
+
+        #legend {
+          bottom: calc(60vh - 34px) !important;
+        }
+      }
+      @media (min-width: 769px) {
+        #drag-handle,
+        #mobile-tab {
+          display: none;
+        }
+      }
+
+      /* ── HEADER ─── */
+      #sidebar-header {
+        padding: 18px 18px 14px;
+        border-bottom: 1px solid var(--border);
+        background: var(--panel2);
+        flex-shrink: 0;
+      }
+      @media (max-width: 768px) {
+        #sidebar-header {
+          padding: 8px 16px 10px;
+        }
+        #sidebar-header h1 {
+          font-size: 15px;
+        }
+        .trip-meta {
+          display: none;
+        }
+      }
+      .flag-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+      }
+      .route-tag {
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--gold);
+        font-weight: 500;
+      }
+      #sidebar-header h1 {
+        font-family: "Playfair Display", serif;
+        font-size: 19px;
+        line-height: 1.2;
+      }
+      #sidebar-header h1 em {
+        color: var(--gold);
+        font-style: italic;
+      }
+      .trip-meta {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+
+      /* ── FILTER TABS ─── */
+      #filter-tabs {
+        display: flex;
+        gap: 4px;
+        padding: 8px 10px;
+        background: var(--dark);
+        border-bottom: 1px solid var(--border);
+        flex-wrap: wrap;
+        flex-shrink: 0;
+      }
+      .filter-btn {
+        padding: 4px 9px;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--muted);
+        font-size: 10px;
+        font-family: "DM Sans", sans-serif;
+        cursor: pointer;
+        transition: all 0.18s;
+        white-space: nowrap;
+      }
+      .filter-btn:hover,
+      .filter-btn.active {
+        background: var(--gold);
+        color: var(--dark);
+        border-color: var(--gold);
+        font-weight: 500;
+      }
+
+      /* ── TIMELINE ─── */
+      #timeline {
+        overflow-y: auto;
+        flex: 1;
+        padding: 4px 0;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+      }
+
+      /* City block */
+      .city-block {
+        transition: background 0.15s;
+      }
+      .city-block.active {
+        background: rgba(201, 168, 76, 0.06);
+      }
+
+      .city-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 14px 6px;
+        cursor: pointer;
+      }
+      .city-header:hover {
+        background: rgba(201, 168, 76, 0.05);
+      }
+
+      .city-badge {
+        min-width: 32px;
+        height: 32px;
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--dark);
+        flex-direction: column;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+      .city-badge span {
+        font-size: 7px;
+        font-weight: 400;
+        margin-top: 1px;
+      }
+
+      .city-info {
+        flex: 1;
+      }
+      .city-name {
+        font-family: "Playfair Display", serif;
+        font-size: 15px;
+      }
+      .city-date {
+        font-size: 10px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+
+      /* Day sub-rows */
+      .city-days {
+        padding: 0 14px 10px 0;
+      }
+
+      .day-row {
+        display: flex;
+        gap: 0;
+        align-items: stretch;
+        padding: 4px 14px 4px 14px;
+      }
+
+      .day-spine {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 32px;
+        flex-shrink: 0;
+        margin-right: 10px;
+      }
+
+      .day-num {
+        width: 22px;
+        height: 22px;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--dark);
+        flex-shrink: 0;
+        line-height: 1;
+      }
+
+      .day-line {
+        width: 1px;
+        flex: 1;
+        min-height: 4px;
+        background: var(--border);
+        margin-top: 3px;
+      }
+
+      .day-content {
+        flex: 1;
+        padding-bottom: 6px;
+      }
+
+      .day-label {
+        font-size: 10px;
+        font-weight: 500;
+        color: var(--text);
+        letter-spacing: 0.2px;
+        margin-bottom: 4px;
+        margin-top: 2px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+      }
+
+      .spot-item {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 11.5px;
+        color: var(--muted);
+        padding: 2px 0;
+        transition: color 0.15s;
+        cursor: pointer;
+      }
+      .spot-item:hover {
+        color: var(--text);
+      }
+      .spot-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .spot-item.optional::after {
+        content: "opcional";
+        font-size: 9px;
+        color: var(--gold);
+        margin-left: 4px;
+        background: rgba(201, 168, 76, 0.12);
+        padding: 1px 5px;
+        border-radius: 3px;
+        flex-shrink: 0;
+      }
+
+      .divider {
+        height: 1px;
+        background: var(--border);
+        margin: 0 14px;
+      }
+
+      /* Bus transfer */
+      .bus-route {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 14px;
+      }
+      .bus-line {
+        flex: 1;
+        height: 1px;
+        background: repeating-linear-gradient(
+          to right,
+          var(--gold) 0,
+          var(--gold) 5px,
+          transparent 5px,
+          transparent 10px
+        );
+      }
+      .bus-km {
+        font-size: 10px;
+        color: var(--gold);
+        white-space: nowrap;
+      }
+
+      /* ── LEGEND ─── */
+      #legend {
+        position: absolute;
+        bottom: 20px;
+        right: 12px;
+        background: rgba(19, 21, 28, 0.92);
+        backdrop-filter: blur(6px);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 12px;
+        z-index: 500;
+      }
+      #legend h4 {
+        font-size: 9px;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 7px;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 10px;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      .legend-road {
+        width: 22px;
+        height: 2px;
+        background: var(--gold);
+        border-radius: 1px;
+      }
+      .legend-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        border: 2px solid var(--dark);
+      }
+
+      /* ── LOADING ─── */
+      #loading {
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--panel2);
+        border: 1px solid var(--gold);
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 11px;
+        color: var(--gold);
+        z-index: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: opacity 0.4s;
+      }
+      .spin {
+        animation: spin 1s linear infinite;
+        display: inline-block;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ── POPUP ─── */
+      .leaflet-popup-content-wrapper {
+        background: var(--panel2) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 8px !important;
+        color: var(--text) !important;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6) !important;
+      }
+      .leaflet-popup-tip {
+        background: var(--panel2) !important;
+      }
+      .leaflet-popup-content {
+        margin: 12px 14px !important;
+        font-family: "DM Sans", sans-serif !important;
+      }
+      .popup-city {
+        font-family: "Playfair Display", serif;
+        font-size: 14px;
+        color: var(--gold);
+        margin-bottom: 4px;
+      }
+      .popup-day-label {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--gold);
+        opacity: 0.7;
+        margin: 6px 0 3px;
+      }
+      .popup-spot {
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.8;
+      }
+      .popup-spot::before {
+        content: "→ ";
+        color: var(--gold);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="map-wrap">
+        <div id="map"></div>
+        <div id="loading">
+          <span class="spin">⟳</span> Cargando rutas por carretera…
+        </div>
+        <div id="legend">
+          <h4>Referencias</h4>
+          <div class="legend-item">
+            <div class="legend-road"></div>
+            Ruta por carretera
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: #c9a84c"></div>
+            Punto de interés
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: #c0392b"></div>
+            Ciudad principal
+          </div>
+        </div>
+      </div>
+
+      <div id="sidebar">
+        <div id="drag-handle"></div>
+        <div id="mobile-tab">
+          <span class="tab-label" id="tab-label">🍁 Ver itinerario</span>
+          <span class="tab-toggle" id="tab-btn">↑ Abrir</span>
+        </div>
+
+        <div id="sidebar-header">
+          <div class="flag-row">
+            <span style="color: var(--maple)">🍁</span>
+            <span class="route-tag">YUL → YYZ · 9 noches</span>
+          </div>
+          <h1>Este <em>Canadiense</em> Extraordinario</h1>
+          <div class="trip-meta">
+            31 MAY – 09 JUN 2026 · 4 adultos · $2,399 USD p/p
+          </div>
+        </div>
+
+        <div id="filter-tabs">
+          <button class="filter-btn active" onclick="filterCity('all', this)">
+            Todos
+          </button>
+          <button class="filter-btn" onclick="filterCity('montreal', this)">
+            Montréal
+          </button>
+          <button class="filter-btn" onclick="filterCity('quebec', this)">
+            Québec
+          </button>
+          <button class="filter-btn" onclick="filterCity('tremblant', this)">
+            Tremblant
+          </button>
+          <button class="filter-btn" onclick="filterCity('ottawa', this)">
+            Ottawa
+          </button>
+          <button class="filter-btn" onclick="filterCity('milislas', this)">
+            Mil Islas
+          </button>
+          <button class="filter-btn" onclick="filterCity('toronto', this)">
+            Toronto
+          </button>
+          <button class="filter-btn" onclick="filterCity('niagara', this)">
+            Niágara
+          </button>
+        </div>
+
+        <div id="timeline"></div>
+      </div>
+    </div>
+
+    <script>
+      // ── DATA ─────────────────────────────────────────────────────────────────
+      // Each city has `dayEntries`: array of { day, date, label, spots[] }
+      // spots: { name, coords, optional? }
+
+      const CITIES = [
+        {
+          id: "montreal",
+          name: "Montréal",
+          color: "#4A90D9",
+          coords: [45.5017, -73.5673],
+          dateRange: "31 May – 02 Jun",
+          dayEntries: [
+            {
+              day: 1,
+              date: "31 May",
+              label: "Llegada",
+              spots: [
+                {
+                  name: "Vieux-Port (paseo nocturno)",
+                  coords: [45.5025, -73.5523],
+                  optional: true,
+                },
+                {
+                  name: "Marché Atwater",
+                  coords: [45.4748, -73.5761],
+                  optional: true,
+                },
+              ],
+            },
+            {
+              day: 2,
+              date: "01 Jun",
+              label: "Tour gastronómico",
+              spots: [
+                { name: "Mercado Jean-Talon", coords: [45.53, -73.6147] },
+                {
+                  name: "Blvd St-Laurent & Schwartz Deli",
+                  coords: [45.5185, -73.5985],
+                },
+                {
+                  name: "Barrio Plateau Mont-Royal",
+                  coords: [45.526, -73.5774],
+                },
+                { name: "Parque Lafontaine", coords: [45.5283, -73.5716] },
+                {
+                  name: "Museo Pointe-à-Callières",
+                  coords: [45.5025, -73.554],
+                  optional: true,
+                },
+                {
+                  name: "Museo de Bellas Artes MBAM",
+                  coords: [45.4987, -73.5785],
+                  optional: true,
+                }
+              ],
+            },
+            {
+              day: 3,
+              date: "02 Jun",
+              label: "Vieux-Montréal → salida a Québec",
+              spots: [
+                {
+                  name: "Vieux-Montréal & Plaza de Armas",
+                  coords: [45.5057, -73.5549],
+                },
+                { name: "Basílica Notre-Dame", coords: [45.5045, -73.5567] },
+                { name: "Antiguo Puerto", coords: [45.5025, -73.548] },
+                { name: "Parque del Mont-Royal", coords: [45.5044, -73.587] },
+                { name: "Oratorio San José", coords: [45.4922, -73.6168] },
+              ],
+            },
+          ],
+        },
+        {
+          id: "quebec",
+          name: "Québec City",
+          color: "#E67E22",
+          coords: [46.8139, -71.208],
+          dateRange: "02 – 03 Jun",
+          transfer: { from: "Montréal", km: 252 },
+          dayEntries: [
+            {
+              day: 3,
+              date: "02 Jun",
+              label: "Llegada · visita panorámica",
+              spots: [
+                { name: "Castillo Frontenac", coords: [46.8122, -71.2047] },
+                { name: "Terraza Dufferin", coords: [46.8117, -71.2055] },
+                { name: "Barrio Petit Champlain", coords: [46.8108, -71.204] },
+                { name: "Plaza Real", coords: [46.8099, -71.2027] },
+                { name: "Parlamento de Québec", coords: [46.8075, -71.214] },
+                {
+                  name: "Calles Saint-Jean & Grande-Allée",
+                  coords: [46.8085, -71.2185],
+                },
+                { name: "Viejo Puerto de Québec", coords: [46.8181, -71.202] },
+              ],
+            },
+            {
+              day: 4,
+              date: "03 Jun",
+              label: "Día libre",
+              spots: [
+                {
+                  name: "Planicies de Abraham",
+                  coords: [46.8001, -71.2187],
+                  optional: true,
+                },
+                {
+                  name: "Rue Saint-Jean (bares y tiendas)",
+                  coords: [46.8085, -71.2185],
+                  optional: true,
+                },
+                {
+                  name: "Cascada Montmorency",
+                  coords: [46.8889, -71.1427],
+                  optional: true,
+                },
+                {
+                  name: "Observación ballenas (Charlevoix)",
+                  coords: [47.4667, -70.75],
+                  optional: true,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: "tremblant",
+          name: "Mont-Tremblant",
+          color: "#27AE60",
+          coords: [46.1185, -74.5962],
+          dateRange: "04 Jun",
+          transfer: { from: "Québec", km: 375 },
+          dayEntries: [
+            {
+              day: 5,
+              date: "04 Jun",
+              label: "Sentier des Cimes · pueblo",
+              spots: [
+                {
+                  name: "Sentier des Cimes (torre 40m)",
+                  coords: [46.217, -74.605],
+                },
+                {
+                  name: "Pueblo peatonal de Tremblant",
+                  coords: [46.1185, -74.5962],
+                },
+                {
+                  name: "Lago Tremblant",
+                  coords: [46.125, -74.605],
+                  optional: true,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: "ottawa",
+          name: "Ottawa",
+          color: "#8E44AD",
+          coords: [45.4215, -75.6972],
+          dateRange: "05 Jun",
+          transfer: { from: "Mont-Tremblant", km: 164 },
+          dayEntries: [
+            {
+              day: 6,
+              date: "05 Jun",
+              label: "Parque Omega · capital federal",
+              spots: [
+                {
+                  name: "Parque Omega (fauna canadiense)",
+                  coords: [45.8833, -75.7833],
+                },
+                {
+                  name: "Calle Wellington & Edificios",
+                  coords: [45.4236, -75.7009],
+                },
+                { name: "Parlamento Canadiense", coords: [45.4236, -75.7009] },
+                {
+                  name: "Sussex Drive (residencia PM)",
+                  coords: [45.443, -75.696],
+                },
+                { name: "Canal Rideau", coords: [45.4215, -75.6892] },
+                { name: "Mercado By", coords: [45.4278, -75.6898] },
+              ],
+            },
+          ],
+        },
+        {
+          id: "milislas",
+          name: "Mil Islas",
+          color: "#16A085",
+          coords: [44.3295, -76.1592],
+          dateRange: "06 Jun · en ruta",
+          transfer: { from: "Ottawa", km: 403, note: "hacia Toronto" },
+          dayEntries: [
+            {
+              day: 7,
+              date: "06 Jun",
+              label: "Crucero · Río San Lorenzo",
+              spots: [
+                {
+                  name: "Crucero 1h por las 1700 islas",
+                  coords: [44.3295, -76.1592],
+                },
+                { name: "Río San Lorenzo", coords: [44.28, -76.3] },
+              ],
+            },
+          ],
+        },
+        {
+          id: "toronto",
+          name: "Toronto",
+          color: "#C0392B",
+          coords: [43.6532, -79.3832],
+          dateRange: "06 – 09 Jun",
+          dayEntries: [
+            {
+              day: 7,
+              date: "06 Jun",
+              label: "Llegada",
+              spots: [
+                {
+                  name: "Check-in hotel · tiempo libre",
+                  coords: [43.6532, -79.3832],
+                },
+              ],
+            },
+            {
+              day: 8,
+              date: "07 Jun",
+              label: "Niágara (ver sección Niágara)",
+              spots: [], // handled by niagara city
+            },
+            {
+              day: 9,
+              date: "08 Jun",
+              label: "Tour Toronto",
+              spots: [
+                { name: "Old & New City Hall", coords: [43.6529, -79.3791] },
+                { name: "Parlamento de Ontario", coords: [43.6629, -79.3921] },
+                { name: "Barrio Chino", coords: [43.6535, -79.3973] },
+                { name: "Universidad de Toronto", coords: [43.6629, -79.3957] },
+                { name: "Torre CN", coords: [43.6426, -79.3871] },
+                { name: "Distillery District", coords: [43.6503, -79.3596] },
+                { name: "Mercado San Lorenzo", coords: [43.6487, -79.371] },
+                {
+                  name: "Royal Ontario Museum",
+                  coords: [43.6677, -79.3948],
+                  optional: true,
+                },
+                {
+                  name: "Hockey Hall of Fame",
+                  coords: [43.6476, -79.3775],
+                  optional: true,
+                },
+                {
+                  name: "Eaton Center",
+                  coords: [43.6546, -79.3807],
+                  optional: true,
+                },
+                {
+                  name: "Galería de Arte de Ontario (AGO)",
+                  coords: [43.65376, -79.39209],
+                  optional: true,
+                }
+              ],
+            },
+            {
+              day: 10,
+              date: "09 Jun",
+              label: "Vuelo a CDMX ✈",
+              spots: [
+                {
+                  name: "Aeropuerto Toronto Pearson (YYZ)",
+                  coords: [43.6777, -79.6248],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: "niagara",
+          name: "Cataratas del Niágara",
+          color: "#2980B9",
+          coords: [43.0896, -79.0849],
+          dateRange: "07 Jun",
+          transfer: { from: "Toronto", km: 132, note: "ida y vuelta" },
+          dayEntries: [
+            {
+              day: 8,
+              date: "07 Jun",
+              label: "Cataratas · viñedo",
+              spots: [
+                { name: "Horseshoe Falls", coords: [43.0799, -79.0747] },
+                {
+                  name: 'Barco "Voyage to the Falls"',
+                  coords: [43.084, -79.079],
+                },
+                { name: "Niagara-on-the-Lake", coords: [43.2552, -79.0717] },
+                {
+                  name: "Château des Charmes (viñedo)",
+                  coords: [43.1572, -79.1185], // 43.15728504072623, -79.1185520659269
+                },
+              ],
+            },
+          ],
+        },
+      ];
+
+      const ROUTE_SEGMENTS = [
+        [
+          [45.5017, -73.5673],
+          [46.8139, -71.208],
+        ],
+        [
+          [46.8139, -71.208],
+          [46.1185, -74.5962],
+        ],
+        [
+          [46.1185, -74.5962],
+          [45.4215, -75.6972],
+        ],
+        [
+          [45.4215, -75.6972],
+          [44.3295, -76.1592],
+        ],
+        [
+          [44.3295, -76.1592],
+          [43.6532, -79.3832],
+        ],
+        [
+          [43.6532, -79.3832],
+          [43.0896, -79.0849],
+        ],
+        [
+          [43.0896, -79.0849],
+          [43.6532, -79.3832],
+        ],
+      ];
+
+      // ── MAP ──────────────────────────────────────────────────────────────────
+      const map = L.map("map", {
+        center: [45.2, -74.8],
+        zoom: 6,
+        zoomControl: false,
+      });
+
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
+        crossOrigin: true,
+      }).addTo(map);
+
+      L.control.zoom({ position: "bottomright" }).addTo(map);
+
+      // ── OSRM ROUTES ──────────────────────────────────────────────────────────
+      const routeLayers = [];
+
+      async function loadRoutes() {
+        const loading = document.getElementById("loading");
+        const results = await Promise.allSettled(
+          ROUTE_SEGMENTS.map(([a, b]) => {
+            const url = `https://router.project-osrm.org/route/v1/driving/${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson`;
+            return fetch(url)
+              .then((r) => r.json())
+              .then((d) => d.routes?.[0]?.geometry ?? null);
+          }),
+        );
+        results.forEach((r, i) => {
+          let layer;
+          if (r.status === "fulfilled" && r.value) {
+            layer = L.geoJSON(r.value, {
+              style: { color: "#C9A84C", weight: 3, opacity: 0.85 },
+            }).addTo(map);
+          } else {
+            const [a, b] = ROUTE_SEGMENTS[i];
+            layer = L.polyline([a, b], {
+              color: "#C9A84C",
+              weight: 2,
+              opacity: 0.5,
+              dashArray: "6 8",
+            }).addTo(map);
+          }
+          routeLayers.push(layer);
+        });
+        loading.style.opacity = "0";
+        setTimeout(() => loading.remove(), 500);
+      }
+
+      loadRoutes();
+
+      // ── MARKERS ──────────────────────────────────────────────────────────────
+      const cityMarkers = {};
+      const spotMarkersMap = {}; // id -> flat array of leaflet markers
+
+      CITIES.forEach((city) => {
+        // City marker
+        const icon = L.divIcon({
+          html: `<div style="width:13px;height:13px;background:${city.color};border:2px solid #0D0F14;border-radius:50%;box-shadow:0 0 0 2px ${city.color}55,0 2px 8px rgba(0,0,0,0.6)"></div>`,
+          className: "",
+          iconSize: [13, 13],
+          iconAnchor: [6, 6],
+        });
+
+        // Popup: grouped by day
+        const popupContent = `
+    <div class="popup-city">${city.name}</div>
+    ${city.dayEntries
+      .map((de) =>
+        de.spots.length
+          ? `
+      <div class="popup-day-label">Día ${de.day} · ${de.date}</div>
+      ${de.spots.map((s) => `<div class="popup-spot">${s.name}${s.optional ? ' <em style="opacity:0.6;font-size:9px">(op.)</em>' : ""}</div>`).join("")}
+    `
+          : "",
+      )
+      .join("")}
+  `;
+
+        cityMarkers[city.id] = L.marker(city.coords, { icon })
+          .addTo(map)
+          .bindPopup(popupContent, { maxWidth: 250 });
+
+        // City label
+        L.marker(city.coords, {
+          icon: L.divIcon({
+            html: `<div style="font-family:'Playfair Display',serif;font-size:10.5px;color:${city.color};white-space:nowrap;text-shadow:0 1px 4px #000;margin-left:9px;margin-top:-4px;pointer-events:none;font-style:italic">${city.name}</div>`,
+            className: "",
+            iconSize: [140, 18],
+            iconAnchor: [0, 9],
+          }),
+        }).addTo(map);
+
+        // Spot markers (flat)
+        spotMarkersMap[city.id] = [];
+        city.dayEntries.forEach((de) => {
+          de.spots.forEach((s) => {
+            const si = L.divIcon({
+              html: `<div style="width:8px;height:8px;background:${s.optional ? city.color + "55" : city.color};border:2px solid ${city.color};border-radius:50%;box-shadow:0 0 0 1.5px #0D0F14"></div>`,
+              className: "",
+              iconSize: [8, 8],
+              iconAnchor: [4, 4],
+            });
+            const m = L.marker(s.coords, { icon: si })
+              .addTo(map)
+              .bindTooltip(s.name, { direction: "top", offset: [0, -5] });
+            spotMarkersMap[city.id].push(m);
+          });
+        });
+      });
+
+      // ── TIMELINE RENDER ──────────────────────────────────────────────────────
+      function renderTimeline(filterID) {
+        const tl = document.getElementById("timeline");
+        tl.innerHTML = "";
+
+        CITIES.forEach((city, idx) => {
+          if (filterID !== "all" && city.id !== filterID) return;
+
+          // Bus separator
+          if (city.transfer && filterID === "all") {
+            const bus = document.createElement("div");
+            bus.className = "bus-route";
+            bus.innerHTML = `<div class="bus-line"></div><span>🚌</span><span class="bus-km">${city.transfer.km ? city.transfer.km + " km" : ""} ${city.transfer.note || ""}</span><div class="bus-line"></div>`;
+            tl.appendChild(bus);
+          }
+
+          const block = document.createElement("div");
+          block.className = "city-block";
+
+          // City header (days range badge)
+          const allDays = city.dayEntries.map((d) => d.day);
+          const dayMin = Math.min(...allDays);
+          const dayMax = Math.max(...allDays);
+          const dayLabel =
+            dayMin === dayMax ? `${dayMin}` : `${dayMin}–${dayMax}`;
+
+          const header = document.createElement("div");
+          header.className = "city-header";
+          header.innerHTML = `
+      <div class="city-badge" style="background:${city.color}">
+        ${dayLabel}<span>DÍA</span>
+      </div>
+      <div class="city-info">
+        <div class="city-name">${city.name}</div>
+        <div class="city-date">${city.dateRange}</div>
+      </div>
+    `;
+
+          header.addEventListener("click", () => {
+            map.flyTo(city.coords, 12, { duration: 1.2 });
+            cityMarkers[city.id].openPopup();
+            document
+              .querySelectorAll(".city-block")
+              .forEach((b) => b.classList.remove("active"));
+            block.classList.add("active");
+            setMobileTab(city.name);
+            closeMobilePanel();
+          });
+
+          block.appendChild(header);
+
+          // Day entries
+          const daysWrap = document.createElement("div");
+          daysWrap.className = "city-days";
+
+          city.dayEntries.forEach((de, di) => {
+            if (de.spots.length === 0) return; // skip empty day slots
+            const isLast =
+              di ===
+              city.dayEntries.filter((d) => d.spots.length > 0).length - 1;
+
+            const row = document.createElement("div");
+            row.className = "day-row";
+
+            const spine = document.createElement("div");
+            spine.className = "day-spine";
+            spine.innerHTML = `
+        <div class="day-num" style="background:${city.color}22;color:${city.color};border:1px solid ${city.color}44">${de.day}</div>
+        ${!isLast ? '<div class="day-line"></div>' : ""}
+      `;
+
+            const content = document.createElement("div");
+            content.className = "day-content";
+            content.innerHTML = `
+        <div class="day-label" style="color:${city.color}cc">${de.date} · ${de.label}</div>
+        ${de.spots
+          .map(
+            (s) => `
+          <div class="spot-item${s.optional ? " optional" : ""}" data-lat="${s.coords[0]}" data-lng="${s.coords[1]}">
+            <div class="spot-dot" style="background:${s.optional ? "transparent" : city.color};border:1.5px solid ${city.color}88"></div>
+            ${s.name}
+          </div>
+        `,
+          )
+          .join("")}
+      `;
+
+            content.querySelectorAll(".spot-item").forEach((el) => {
+              el.addEventListener("click", (e) => {
+                e.stopPropagation();
+                map.flyTo([+el.dataset.lat, +el.dataset.lng], 14, {
+                  duration: 1,
+                });
+                closeMobilePanel();
+              });
+            });
+
+            row.appendChild(spine);
+            row.appendChild(content);
+            daysWrap.appendChild(row);
+          });
+
+          block.appendChild(daysWrap);
+          if (idx < CITIES.length - 1) {
+            const div = document.createElement("div");
+            div.className = "divider";
+            block.appendChild(div);
+          }
+
+          tl.appendChild(block);
+        });
+      }
+
+      function filterCity(id, btn) {
+        document
+          .querySelectorAll(".filter-btn")
+          .forEach((b) => b.classList.remove("active"));
+        if (btn) btn.classList.add("active");
+        renderTimeline(id);
+
+        if (id === "all") {
+          map.flyTo([45.2, -74.8], 6, { duration: 1.2 });
+          Object.keys(cityMarkers).forEach((k) => {
+            cityMarkers[k].addTo(map);
+            spotMarkersMap[k].forEach((m) => m.addTo(map));
+          });
+          routeLayers.forEach((l) => l.addTo(map));
+        } else {
+          const city = CITIES.find((c) => c.id === id);
+          if (city) map.flyTo(city.coords, 12, { duration: 1.2 });
+          Object.keys(cityMarkers).forEach((k) => {
+            if (k !== id) {
+              map.removeLayer(cityMarkers[k]);
+              spotMarkersMap[k].forEach((m) => map.removeLayer(m));
+            } else {
+              cityMarkers[k].addTo(map);
+              spotMarkersMap[k].forEach((m) => m.addTo(map));
+            }
+          });
+          routeLayers.forEach((l) => map.removeLayer(l));
+        }
+      }
+
+      // ── MOBILE PANEL ─────────────────────────────────────────────────────────
+      const sidebar = document.getElementById("sidebar");
+      let panelOpen = false;
+
+      function openMobilePanel() {
+        panelOpen = true;
+        sidebar.classList.add("open");
+        document.getElementById("tab-btn").textContent = "↓ Cerrar";
+      }
+      function closeMobilePanel() {
+        panelOpen = false;
+        sidebar.classList.remove("open");
+        document.getElementById("tab-btn").textContent = "↑ Abrir";
+      }
+      function setMobileTab(name) {
+        document.getElementById("tab-label").textContent = name;
+      }
+
+      document
+        .getElementById("drag-handle")
+        .addEventListener("click", () =>
+          panelOpen ? closeMobilePanel() : openMobilePanel(),
+        );
+      document
+        .getElementById("mobile-tab")
+        .addEventListener("click", () =>
+          panelOpen ? closeMobilePanel() : openMobilePanel(),
+        );
+
+      let touchStartY = 0;
+      sidebar.addEventListener(
+        "touchstart",
+        (e) => {
+          touchStartY = e.touches[0].clientY;
+        },
+        { passive: true },
+      );
+      sidebar.addEventListener(
+        "touchend",
+        (e) => {
+          const dy = e.changedTouches[0].clientY - touchStartY;
+          if (dy > 40) closeMobilePanel();
+          if (dy < -40) openMobilePanel();
+        },
+        { passive: true },
+      );
+
+      renderTimeline("all");
+    </script>
+  </body>
 </html>
