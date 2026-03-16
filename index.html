@@ -17,15 +17,88 @@
     />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <style>
-      :root {
+      /* ── THEMES ─── */
+      :root,
+      [data-theme="dark"] {
         --gold: #c9a84c;
-        --dark: #0d0f14;
+        --gold-muted: rgba(201, 168, 76, 0.12);
+        --bg: #0d0f14;
         --panel: #13151c;
         --panel2: #1a1d28;
         --border: rgba(201, 168, 76, 0.22);
         --text: #e8e4da;
         --muted: #7a7669;
         --maple: #c0392b;
+        --shadow: rgba(0, 0, 0, 0.6);
+        --map-filter: invert(100%) hue-rotate(180deg) brightness(83%)
+          contrast(85%) saturate(55%);
+        --legend-bg: rgba(19, 21, 28, 0.92);
+      }
+
+      [data-theme="light"] {
+        --gold: #a07828;
+        --gold-muted: rgba(160, 120, 40, 0.1);
+        --bg: #f0ede6;
+        --panel: #fdfaf5;
+        --panel2: #ede9df;
+        --border: rgba(160, 120, 40, 0.22);
+        --text: #1c1810;
+        --muted: #7a6e5e;
+        --maple: #b03020;
+        --shadow: rgba(0, 0, 0, 0.15);
+        --map-filter: none;
+        --legend-bg: rgba(253, 250, 245, 0.94);
+      }
+
+      [data-theme="sepia"] {
+        --gold: #c4973a;
+        --gold-muted: rgba(196, 151, 58, 0.12);
+        --bg: #2c2318;
+        --panel: #332a1c;
+        --panel2: #3d3122;
+        --border: rgba(196, 151, 58, 0.25);
+        --text: #ede0c4;
+        --muted: #9a8a6a;
+        --maple: #c04030;
+        --shadow: rgba(0, 0, 0, 0.5);
+        --map-filter: invert(100%) hue-rotate(180deg) brightness(72%)
+          contrast(80%) saturate(30%) sepia(45%);
+        --legend-bg: rgba(51, 42, 28, 0.94);
+      }
+
+      /* ── THEME TOGGLE ─── */
+      #theme-picker {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+        margin-top: 10px;
+      }
+      .theme-label {
+        font-size: 9px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .theme-btn {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 2px solid transparent;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        transition: all 0.2s;
+        background: var(--panel2);
+      }
+      .theme-btn:hover {
+        border-color: var(--gold);
+        transform: scale(1.12);
+      }
+      .theme-btn.active {
+        border-color: var(--gold);
+        box-shadow: 0 0 0 2px var(--gold-muted);
       }
 
       * {
@@ -38,9 +111,12 @@
       body {
         height: 100%;
         overflow: hidden;
-        background: var(--dark);
+        background: var(--bg);
         color: var(--text);
         font-family: "DM Sans", sans-serif;
+        transition:
+          background 0.25s,
+          color 0.25s;
       }
 
       #app {
@@ -62,8 +138,8 @@
       .leaflet-control-zoom-in,
       .leaflet-control-zoom-out,
       .leaflet-control-attribution {
-        filter: invert(100%) hue-rotate(180deg) brightness(83%) contrast(85%)
-          saturate(55%);
+        filter: var(--map-filter);
+        transition: filter 0.3s;
       }
 
       /* ── DESKTOP SIDEBAR ─── */
@@ -77,6 +153,9 @@
         overflow: hidden;
         z-index: 900;
         order: -1;
+        transition:
+          background 0.25s,
+          border-color 0.25s;
       }
 
       /* ── MOBILE BOTTOM SHEET ─── */
@@ -171,6 +250,9 @@
         border-bottom: 1px solid var(--border);
         background: var(--panel2);
         flex-shrink: 0;
+        transition:
+          background 0.25s,
+          border-color 0.25s;
       }
       @media (max-width: 768px) {
         #sidebar-header {
@@ -216,7 +298,7 @@
         display: flex;
         gap: 4px;
         padding: 8px 10px;
-        background: var(--dark);
+        background: var(--bg);
         border-bottom: 1px solid var(--border);
         flex-wrap: wrap;
         flex-shrink: 0;
@@ -236,7 +318,7 @@
       .filter-btn:hover,
       .filter-btn.active {
         background: var(--gold);
-        color: var(--dark);
+        color: var(--bg);
         border-color: var(--gold);
         font-weight: 500;
       }
@@ -278,7 +360,7 @@
         justify-content: center;
         font-size: 11px;
         font-weight: 600;
-        color: var(--dark);
+        color: var(--bg);
         flex-direction: column;
         line-height: 1;
         flex-shrink: 0;
@@ -332,7 +414,7 @@
         justify-content: center;
         font-size: 10px;
         font-weight: 600;
-        color: var(--dark);
+        color: var(--bg);
         flex-shrink: 0;
         line-height: 1;
       }
@@ -354,7 +436,6 @@
         font-size: 10px;
         font-weight: 500;
         color: var(--text);
-        letter-spacing: 0.2px;
         margin-bottom: 4px;
         margin-top: 2px;
         text-transform: uppercase;
@@ -426,12 +507,15 @@
         position: absolute;
         bottom: 20px;
         right: 12px;
-        background: rgba(19, 21, 28, 0.92);
+        background: var(--legend-bg);
         backdrop-filter: blur(6px);
         border: 1px solid var(--border);
         border-radius: 10px;
         padding: 10px 12px;
         z-index: 500;
+        transition:
+          background 0.25s,
+          border-color 0.25s;
       }
       #legend h4 {
         font-size: 9px;
@@ -458,7 +542,7 @@
         width: 9px;
         height: 9px;
         border-radius: 50%;
-        border: 2px solid var(--dark);
+        border: 2px solid var(--bg);
       }
 
       /* ── LOADING ─── */
@@ -495,7 +579,7 @@
         border: 1px solid var(--border) !important;
         border-radius: 8px !important;
         color: var(--text) !important;
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6) !important;
+        box-shadow: 0 4px 24px var(--shadow) !important;
       }
       .leaflet-popup-tip {
         background: var(--panel2) !important;
@@ -568,6 +652,33 @@
           <h1>Este <em>Canadiense</em> Extraordinario</h1>
           <div class="trip-meta">
             31 MAY – 09 JUN 2026 · 4 adultos · $2,399 USD p/p
+          </div>
+          <div id="theme-picker">
+            <span class="theme-label">Tema</span>
+            <button
+              class="theme-btn active"
+              id="btn-dark"
+              onclick="setTheme('dark')"
+              title="Oscuro"
+            >
+              🌙
+            </button>
+            <button
+              class="theme-btn"
+              id="btn-light"
+              onclick="setTheme('light')"
+              title="Claro"
+            >
+              ☀️
+            </button>
+            <button
+              class="theme-btn"
+              id="btn-sepia"
+              onclick="setTheme('sepia')"
+              title="Sepia"
+            >
+              🍂
+            </button>
           </div>
         </div>
 
@@ -656,7 +767,12 @@
                   name: "Museo de Bellas Artes MBAM",
                   coords: [45.4987, -73.5785],
                   optional: true,
-                }
+                },
+                {
+                  name: "Mont-Royal (mirador Kondiaronk)",
+                  coords: [45.5044, -73.587],
+                  optional: true,
+                },
               ],
             },
             {
@@ -1129,7 +1245,7 @@
             spine.className = "day-spine";
             spine.innerHTML = `
         <div class="day-num" style="background:${city.color}22;color:${city.color};border:1px solid ${city.color}44">${de.day}</div>
-        ${!isLast ? '<div class="day-line"></div>' : ""}
+        ${isLast ? '' : '<div class="day-line"></div>'}
       `;
 
             const content = document.createElement("div");
@@ -1250,6 +1366,28 @@
         },
         { passive: true },
       );
+
+      // ── THEME ─────────────────────────────────────────────────────────────────
+      function setTheme(theme) {
+        document.documentElement.setAttribute("data-theme", theme);
+        document
+          .querySelectorAll(".theme-btn")
+          .forEach((b) => b.classList.remove("active"));
+        document.getElementById("btn-" + theme).classList.add("active");
+        try {
+          localStorage.setItem("canada-map-theme", theme);
+        } catch (e) {
+          console.warn("No se pudo guardar el tema en localStorage:", e);
+        }
+      }
+
+      // Restore saved theme
+      try {
+        const saved = localStorage.getItem("canada-map-theme");
+        if (saved) setTheme(saved);
+      } catch (e) {
+        console.warn("No se pudo acceder a localStorage para el tema:", e);
+      }
 
       renderTimeline("all");
     </script>
